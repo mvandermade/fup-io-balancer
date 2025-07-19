@@ -10,6 +10,7 @@ clap = { version = "=4.1.10", default-features = true, features = ["std", "deriv
 crossbeam-channel = "0.5.15"
 env_logger = "0.11.8"
 log = "0.4.27"
+prost = "0.14.1"
 tonic = "0.13.1"
 
 [build-dependencies]

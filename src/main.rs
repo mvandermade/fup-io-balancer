@@ -15,8 +15,9 @@ use ::std::thread;
 use clap::Parser;
 use crate::cli::CliArgs;
 
-mod scanner;
+mod rpc;
 mod balancer;
+mod scanner;
 mod postzegel_event;
 mod demos;
 mod cli;
