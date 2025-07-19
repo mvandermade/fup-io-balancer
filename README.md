@@ -23,7 +23,7 @@
 * If proto seems out of sync, do `cargo clean` and do 'cargo refresh' in RustRover if applicable.
 
 # Todo
-- grpc
-- cli (clap)
+- fix mock client
+- handle ack timeouts and error responses
 - stats
 

@@ -63,7 +63,7 @@ impl Dispatcher {
         //TODO @mark: impl & call this
     }
 
-    pub async fn try_assign(&self, postzegel_code: String) -> Option<()> {
+    pub async fn try_assign(&self, postzegel_code: String) -> AssignResult {
         let task_id = self.top_task_id.fetch_add(1, atomic::Ordering::Relaxed);
         let work = WorkAssignment {
             task_id,
@@ -73,10 +73,17 @@ impl Dispatcher {
         };
         let Some(worker) = self.workers.lock().await.find_available() else {
             debug!("No workers available for task {task_id}");
-            return None;
+            return AssignResult::NoWorkers;
         };
         let work_id = WorkId { worker_id: worker, task_id };
         self.in_flight.insert(work_id, ());
-        Some(())
+        todo!("send to rpc");  //TODO @mark: TEMPORARY! REMOVE THIS!
+        AssignResult::Assigned
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AssignResult {
+    Assigned,
+    NoWorkers,
 }

@@ -2,7 +2,7 @@
 
 use crate::balancer::Balancer;
 use crate::cli::CliArgs;
-use crate::postzegel_event::PostzegelEvent;
+use crate::postzegel::PostzegelEvent;
 use crate::rpc::balancer_svc_server::BalancerSvcServer;
 use crate::rpc::BalancerRpc;
 use crate::scanner::MockScanner;
@@ -19,13 +19,14 @@ use ::std::process::exit;
 use ::std::thread;
 use std::sync::Arc;
 use ::tonic::transport::Server;
+use futures::executor::block_on;
 use crate::dispatcher::Dispatcher;
 
 mod dispatcher;
 mod rpc;
 mod balancer;
 mod scanner;
-mod postzegel_event;
+mod postzegel;
 mod workers;
 mod cli;
 mod demos;
@@ -77,7 +78,7 @@ async fn run(addr: SocketAddr) {
     let dispatcher = Arc::new(Dispatcher::new());
     let dispatcher_clone = dispatcher.clone();
     let balancer_worker = thread::Builder::new().name("balancer".to_string())
-        .spawn(move || Balancer::new(rcv, dispatcher_clone).run())
+        .spawn(move || block_on(Balancer::new(rcv, dispatcher_clone).run()))
         .expect("Failed to spawn scanner thread");
     workers.push(balancer_worker);
 

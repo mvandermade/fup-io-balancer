@@ -1,6 +1,6 @@
 #![allow(unused)]  //TODO @mark: TEMPORARY! REMOVE THIS!
 
-use crate::postzegel_event::PostzegelEvent;
+use crate::postzegel::PostzegelEvent;
 use ::crossbeam_channel::Sender;
 use ::log::debug;
 use ::std::fmt::Debug;
