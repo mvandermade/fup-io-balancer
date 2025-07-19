@@ -48,4 +48,7 @@ fn run() {
     workers.push(balancer_worker);
 
     info!("Started {} threads", workers.len());
+    for worker in workers {
+        worker.join().expect("Failed to join thread");
+    }
 }

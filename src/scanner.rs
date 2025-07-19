@@ -4,6 +4,8 @@ use crate::postzegel_event::PostzegelEvent;
 use ::crossbeam_channel::Sender;
 use ::std::fmt::Debug;
 use ::std::path::PathBuf;
+use std::thread::sleep;
+use log::debug;
 
 #[derive(Debug)]
 pub enum Scanner {
@@ -13,7 +15,10 @@ pub enum Scanner {
 
 impl Scanner {
     pub fn run(&self) -> ! {
-        unimplemented!();
+        match self {
+            Scanner::Real(scanner) => unimplemented!(),
+            Scanner::Mock(scanner) => scanner.run(),
+        }
     }
 }
 
@@ -32,5 +37,15 @@ impl MockScanner {
     pub fn new(sink: Sender<PostzegelEvent>) -> Scanner {
         Scanner::Mock(MockScanner { sink })
     }
-}
 
+    pub fn run(&self) -> ! {
+        let mut seq: u64 = 0;
+        loop {
+            debug!("sending mock event {seq}");
+            self.sink.send(PostzegelEvent::new([1, 2, 3, 4, 5, 6, 7, b'x', (b'0' + (seq % 10) as u8)]))
+                .expect("failed to send event");
+            sleep(std::time::Duration::from_secs(5));
+            seq += 1;
+        }
+    }
+}
