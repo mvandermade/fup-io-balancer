@@ -2,6 +2,11 @@
 
 ## 🏗️ Got some ideas in docs/design
 
+## Setup
+
+* Must install
+  * `protoc`
+  * `cargo`/`rust`
 
 
 # Todo

@@ -1,5 +1,4 @@
 
 fn main() {
-    tonic_build::compile_protos("balanderapi/service.proto").unwrap();
-    println!("cargo:rerun-if-changed=balancerapi/service.proto");
+    tonic_build::compile_protos("balancerapi/service.proto").unwrap();
 }
