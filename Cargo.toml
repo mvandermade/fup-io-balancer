@@ -3,8 +3,13 @@ name = "fup-io-balancer"
 version = "0.1.0"
 edition = "2021"
 
+build = "build.rs"
+
 [dependencies]
 crossbeam-channel = "0.5.15"
 env_logger = "0.11.8"
 log = "0.4.27"
 tonic = "0.13.1"
+
+[build-dependencies]
+tonic-build = "0.13.1"
