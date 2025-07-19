@@ -1,5 +1,7 @@
 use crate::balancer::Balancer;
-use crate::scanner::{MockScanner, PostzegelEvent, RealScanner};
+use crate::postzegel_event::PostzegelEvent;
+use crate::scanner::MockScanner;
+use crate::scanner::RealScanner;
 use crate::scanner::Scanner;
 use ::env_logger;
 use ::log::debug;
@@ -11,6 +13,7 @@ use ::std::thread;
 
 mod scanner;
 mod balancer;
+mod postzegel_event;
 
 fn main() {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();

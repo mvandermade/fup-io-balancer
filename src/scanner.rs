@@ -1,9 +1,9 @@
 #![allow(unused)]  //TODO @mark: TEMPORARY! REMOVE THIS!
 
+use crate::postzegel_event::PostzegelEvent;
 use ::crossbeam_channel::Sender;
-use ::std::path::PathBuf;
 use ::std::fmt::Debug;
-use ::std::iter::Scan;
+use ::std::path::PathBuf;
 
 #[derive(Debug)]
 pub enum Scanner {
@@ -28,20 +28,3 @@ pub struct MockScanner {
     pub sink: Sender<PostzegelEvent>,
 }
 
-#[derive(Debug)]
-pub struct PostzegelEvent {
-    code: [u8; 9],
-}
-
-const _: () = assert!(size_of::<PostzegelEvent>() < 10);
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn implement_test() {
-        // panic!("{}", size_of::<PathBuf>());
-        panic!("{}", size_of::<Scanner>());
-    }
-}

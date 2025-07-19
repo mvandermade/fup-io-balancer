@@ -1,4 +1,4 @@
-use crate::scanner::PostzegelEvent;
+use crate::postzegel_event::PostzegelEvent;
 use ::crossbeam_channel::Receiver;
 use ::log::debug;
 use ::log::info;
