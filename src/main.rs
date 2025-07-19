@@ -16,6 +16,7 @@ use ::std::thread;
 mod scanner;
 mod balancer;
 mod postzegel_event;
+mod demos;
 
 fn main() {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
@@ -39,7 +40,7 @@ fn run() {
         //TODO @mark: make a real scanner?
         let snd_copy = snd.clone();
         let scanner_worker = thread::Builder::new().name(format!("scanner{nr}"))
-            .spawn(|| MockScanner::new(snd_copy).run())
+            .spawn(move || MockScanner::new(format!("{nr}"), snd_copy).run())
             .expect("Failed to spawn scanner thread");
         workers.push(scanner_worker);
     }
