@@ -1,12 +1,12 @@
 #![allow(unused)]  //TODO @mark: TEMPORARY! REMOVE THIS!
 
+use ::crossbeam_channel::Sender;
 use ::std::path::PathBuf;
-use ::crossbeam_channel::bounded;
 
 #[derive(Debug)]
 pub struct Scanner {
-    address: PathBuf,
-    sink: (),
+    pub address: PathBuf,
+    pub sink: Sender<PostzegelEvent>,
 }
 
 #[derive(Debug)]
