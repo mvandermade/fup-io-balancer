@@ -12,10 +12,10 @@ use ::std::sync::atomic::AtomicU32;
 use ::std::sync::atomic::AtomicU64;
 use ::std::sync::Arc;
 use ::tokio::sync::mpsc::channel;
+use ::tokio::task;
 use ::tonic::codegen::tokio_stream::wrappers::ReceiverStream;
 use ::tonic::IntoRequest;
-use tokio::task;
-use tonic::Status;
+use ::tonic::Status;
 
 tonic::include_proto!("balancerapi");
 
@@ -58,8 +58,12 @@ impl BalancerSvc for BalancerRpc {
 
                 debug!("Got ack for work request {}", ack.task_id);
                 let task_id = WorkId { worker_id, task_id: ack.task_id };
-                dispatcher_clone.complete_work(task_id);
-            }
+                if ack.error.is_empty() {
+                    dispatcher_clone.complete_work(task_id);
+                } else {
+                    dispatcher_clone.fail_work(task_id);
+                }
+        }
             info!("Empty work rpc stream for worker {}", worker_id);
         });
 

@@ -24,6 +24,7 @@
 
 # Todo
 - "h2 protocol error: error reading a body from connection"
-- handle ack timeouts and error responses
+- drain backlog
+- handle ack timeouts responses
 - stats
 
