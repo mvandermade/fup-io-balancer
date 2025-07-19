@@ -1,3 +1,5 @@
+#![allow(unused)]  //TODO @mark: TEMPORARY! REMOVE THIS!
+
 use crate::balancer::Balancer;
 use crate::postzegel_event::PostzegelEvent;
 use crate::scanner::MockScanner;
