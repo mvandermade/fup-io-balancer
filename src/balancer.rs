@@ -1,11 +1,15 @@
+use crate::dispatcher::Dispatcher;
 use crate::postzegel_event::PostzegelEvent;
 use ::crossbeam_channel::Receiver;
 use ::log::debug;
 use ::log::info;
+use ::std::sync::Arc;
 
 #[derive(Debug)]
 pub struct Balancer {
     pub source: Receiver<PostzegelEvent>,
+    dispatcher: Arc<Dispatcher>,
+    backlog: (), //TODO @mark:
 }
 
 impl Balancer {

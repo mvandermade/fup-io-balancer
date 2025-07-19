@@ -19,6 +19,7 @@ use ::std::process::exit;
 use ::std::thread;
 use ::tonic::transport::Server;
 
+mod dispatcher;
 mod rpc;
 mod balancer;
 mod scanner;

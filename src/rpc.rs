@@ -7,39 +7,21 @@ use ::std::pin::Pin;
 use ::std::sync::atomic;
 use ::std::sync::atomic::AtomicU32;
 use ::std::sync::atomic::AtomicU64;
+use std::sync::Arc;
 use ::tonic::IntoRequest;
 use log::error;
+use crate::dispatcher::Dispatcher;
 
 tonic::include_proto!("balancerapi");
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-struct TaskId {
-    worker_id: u32,
-    task_id: u64,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-enum WorkerState {
-    Busy,
-    Available,
-}
-
 #[derive(Debug)]
 pub struct BalancerRpc {
-    top_worker_id: AtomicU32,
-    top_task_id: AtomicU64,
-    workers: DashMap<u32, WorkerState>,
-    in_flight: DashMap<TaskId, ()>,
+    dispatcher: Arc<Dispatcher>,
 }
 
 impl BalancerRpc {
-    pub fn new() -> Self {
-        BalancerRpc {
-            top_worker_id: AtomicU32::new(0),
-            top_task_id: AtomicU64::new(0),
-            workers: DashMap::with_capacity(16),
-            in_flight: Default::default()
-        }
+    pub fn new(dispatcher: Arc<Dispatcher>) -> Self {
+        BalancerRpc { dispatcher }
     }
 }
 
@@ -66,7 +48,9 @@ impl BalancerSvc for BalancerRpc {
             };
 
             debug!("Got ack for work request {}", ack.task_id);
-            let ongoing_task = self.in_flight.remove(&TaskId { worker_id, task_id: ack.task_id });
+            let task_id = TaskId { worker_id, task_id: ack.task_id };
+
+
             if ongoing_task.is_none() {
                 error!("Got ack for work request {} that we not in progress by worker {worker_id}", ack.task_id);
             } else {
