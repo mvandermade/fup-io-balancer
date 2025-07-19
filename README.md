@@ -20,6 +20,8 @@
   cargo run --bin client -- -a http://127.0.0.1:7331
   ```
 
+* If proto seems out of sync, do `cargo clean` and do 'cargo refresh' in RustRover if applicable.
+
 # Todo
 - grpc
 - cli (clap)
