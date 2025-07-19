@@ -20,7 +20,7 @@ impl Balancer {
         loop {
             match self.source.recv() {
                 Ok(event) => {
-                    debug!("Got a postzegel event {:?}", event)
+                    debug!("Got a postzegel event {}", event)
                 },
                 Err(_) => panic!("channel disconnected, cannot get more events"),
             }

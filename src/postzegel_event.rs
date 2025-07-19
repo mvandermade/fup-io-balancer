@@ -1,4 +1,6 @@
-use log::{debug, trace};
+use log::debug;
+use log::trace;
+use std::fmt;
 
 #[derive(Debug)]
 pub struct PostzegelEvent {
@@ -14,6 +16,15 @@ impl PostzegelEvent {
             );
         }
         PostzegelEvent { code }
+    }
+}
+
+impl fmt::Display for PostzegelEvent {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for c in self.code {
+            write!(f, "{}", (c as char))?
+        }
+        Ok(())
     }
 }
 
