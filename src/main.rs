@@ -1,3 +1,4 @@
+use crate::balancer::Balancer;
 use crate::scanner::PostzegelEvent;
 use crate::scanner::Scanner;
 use ::env_logger;
@@ -21,18 +22,15 @@ fn main() {
         exit(2)
     }));
 
+    run();
+}
+
+fn run() {
     info!("Let's start some scnanners!");
     let (snd, rcv) = crossbeam_channel::bounded::<PostzegelEvent>(1024);
-    let scanner = Scanner { address: PathBuf::from("/dev/ttyUSB0"), sink: snd.clone() };
-    info!("Going to wait for postzegel events");
-    loop {
-        match rcv.recv() {
-            Ok(event) => {
-                debug!("Got a postzegel event {:?}", event)
-            },
-            Err(_) => panic!("channel disconnected, cannot get more events"),
-        }
-    }
-    info!("ready!");
+    let scanner1 = Scanner { address: PathBuf::from("/dev/ttyUSB0"), sink: snd.clone() };
+    let scanner2 = Scanner { address: PathBuf::from("/dev/ttyUSB1"), sink: snd.clone() };
+    let balancer = Balancer { source: rcv };
+    balancer.run();
 }
 
