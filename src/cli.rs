@@ -13,7 +13,7 @@ pub struct CliArgs {
     #[arg(short = 'q', conflicts_with = "verbose")]
     pub quiet: bool,
     /// The ip and port to listen on
-    #[arg(short = 'b', default_value = "127.0.0.1:7331")]
+    #[arg(short = 'b', default_value = "0.0.0.0:7331")]
     pub addr: SocketAddr,
 }
 
@@ -21,4 +21,5 @@ pub struct CliArgs {
 fn test_cli_args() {
     CliArgs::try_parse_from(&["cmd", "-v"]).unwrap();
     CliArgs::try_parse_from(&["cmd", "-q"]).unwrap();
+    CliArgs::try_parse_from(&["cmd", "-b", "127.0.0.1:8080"]).unwrap();
 }
