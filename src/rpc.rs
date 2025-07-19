@@ -14,6 +14,8 @@ use ::std::sync::Arc;
 use ::tokio::sync::mpsc::channel;
 use ::tonic::codegen::tokio_stream::wrappers::ReceiverStream;
 use ::tonic::IntoRequest;
+use tokio::task;
+use tonic::Status;
 
 tonic::include_proto!("balancerapi");
 
@@ -38,24 +40,30 @@ impl BalancerSvc for BalancerRpc {
     //     }))
     // }
 
-    type workStream = Pin<Box<dyn futures::Stream<Item = Result<WorkAssignment, tonic::Status>> + Send + 'static>>;
+    type workStream = Pin<Box<dyn futures::Stream<Item=Result<WorkAssignment, tonic::Status>> + Send + 'static>>;
 
     async fn work(&self, request: tonic::Request<tonic::Streaming<WorkAcknowledgement>>) -> Result<tonic::Response<Self::workStream>, tonic::Status> {
         let (task_sender, task_receiver) = channel::<WorkAssignment>(1);
         let worker_id = self.dispatcher.new_worker(task_sender).await;
 
-        todo!("move this while loop to thread or async task");
-        let mut request_stream = request.into_inner();
-        while let Some(req) = request_stream.next().await {
-            let Ok(ack) = req else {
-                panic!("error reading work request");
-            };
+        let dispatcher_clone = self.dispatcher.clone();
+        task::spawn(async move {
+            debug!("Starting work rpc acknowledge listening stream for worker {}", worker_id);
+            let mut request_stream = request.into_inner();
+            while let Some(req) = request_stream.next().await {
+                let ack = match req {
+                    Ok(ack) => ack,
+                    Err(err) => panic!("error reading work request: {err}"),
+                };
 
-            debug!("Got ack for work request {}", ack.task_id);
-            let task_id = WorkId { worker_id, task_id: ack.task_id };
-            self.dispatcher.complete_work(task_id);
-        }
+                debug!("Got ack for work request {}", ack.task_id);
+                let task_id = WorkId { worker_id, task_id: ack.task_id };
+                dispatcher_clone.complete_work(task_id);
+            }
+            info!("Empty work rpc stream for worker {}", worker_id);
+        });
 
+        debug!("Starting work rpc task sending stream for worker {}", worker_id);
         let outbound_stream = ReceiverStream::new(task_receiver);
         Ok(tonic::Response::new(Box::pin(outbound_stream.map(|work| Ok(work)))))
     }

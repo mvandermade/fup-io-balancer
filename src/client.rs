@@ -60,7 +60,9 @@ async fn run(addr: Uri) {
     response_stream.into_inner().for_each(|resp| async {
         info!("Received response: {:?}", resp);
         if let Ok(resp) = resp {
+            debug!("Acknowledging task: {:?}", resp.task_id);
             task_sender.send(WorkAcknowledgement { task_id: resp.task_id, error: "".to_string() });
         }
     });
+    info!("End of response stream")
 }
