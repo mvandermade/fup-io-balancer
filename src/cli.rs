@@ -7,13 +7,13 @@ use ::clap::Parser;
 )]
 pub struct CliArgs {
     /// Run in verbose mode
-    #[arg(short = 'v')]
+    #[arg(short = 'v', long)]
     pub verbose: bool,
     /// Run in quiet mode
-    #[arg(short = 'q', conflicts_with = "verbose")]
+    #[arg(short = 'q', long, conflicts_with = "verbose")]
     pub quiet: bool,
     /// The ip and port to listen on
-    #[arg(short = 'b', default_value = "0.0.0.0:7331")]
+    #[arg(short = 'b', long, default_value = "0.0.0.0:7331")]
     pub addr: SocketAddr,
 }
 

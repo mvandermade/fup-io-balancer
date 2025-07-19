@@ -58,6 +58,8 @@ async fn run(addr: SocketAddr) {
     info!("Let's start some scanners!");
     let (snd, rcv) = crossbeam_channel::bounded::<PostzegelEvent>(1024);
 
+    //TODO @mark: use scoped threads, if we figure out how to add a thread name to those
+
     let mut workers = Vec::with_capacity(8);
     for nr in 1 ..= 3 {
         //TODO @mark: make a real scanner?

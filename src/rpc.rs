@@ -1,7 +1,5 @@
 use crate::rpc::balancer_svc_server::BalancerSvc;
 use ::log::info;
-use ::tonic::Response;
-use ::tonic::Status;
 
 tonic::include_proto!("balancerapi");
 
@@ -16,10 +14,10 @@ impl BalancerRpc {
 
 #[tonic::async_trait]
 impl BalancerSvc for BalancerRpc {
-    async fn request_work(&self, request: tonic::Request<Request>) -> Result<Response<Reply>, Status> {
+    async fn request_work(&self, request: tonic::Request<WorkRequest>) -> Result<tonic::Response<WorkResponse>, tonic::Status> {
         let req = request.into_inner();
         info!("got request named {}, sending response", req.name);
-        Ok(Response::new(Reply {
+        Ok(tonic::Response::new(WorkResponse {
             message: format!("Hello, {}!", req.name),
         }))
     }

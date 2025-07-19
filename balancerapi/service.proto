@@ -5,13 +5,13 @@ package balancerapi;
 option java_multiple_files = true;
 
 service BalancerSvc {
-  rpc request_work (Request) returns (Reply);
+  rpc request_work (WorkRequest) returns (WorkResponse);
 }
 
-message Request {
+message WorkRequest {
   string name = 1;
 }
 
-message Reply {
+message WorkResponse {
   string message = 1;
 }

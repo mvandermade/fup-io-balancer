@@ -23,34 +23,14 @@ tonic::include_proto!("balancerapi");
 )]
 pub struct ClientArgs {
     /// The ip and port to connect to
-    #[arg(short = 'b', default_value = "127.0.0.1:7331")]
+    #[arg(short = 'a', long, default_value = "http://127.0.0.1:7331")]
     pub addr: Uri,
 }
 
 #[test]
 fn test_cli_args() {
-    ClientArgs::try_parse_from(&["client", "-b", "localhost:8080"]).unwrap();
+    ClientArgs::try_parse_from(&["client", "-a", "http://localhost:8080"]).unwrap();
 }
-
-// #[derive(Debug, Clone)]
-// pub struct ClientRpc {}
-//
-// impl ClientRpc {
-//     pub fn new() -> Self {
-//         ClientRpc {}
-//     }
-// }
-//
-// #[tonic::async_trait]
-// impl BalancerSvc for ClientRpc {
-//     async fn request_work(&self, request: tonic::Request<Request>) -> Result<Response<Reply>, Status> {
-//         let req = request.into_inner();
-//         info!("got request named {}, sending response", req.name);
-//         Ok(Response::new(Reply {
-//             message: format!("Hello, {}!", req.name),
-//         }))
-//     }
-// }
 
 #[tokio::main]
 async fn main() {
@@ -65,11 +45,13 @@ async fn main() {
 async fn run(addr: Uri) {
     info!("Starting test client, connecting to {addr}");
 
+    assert!(addr.scheme().is_some(), "Provide a protocol to -a, like http:// or https://");
     let mut client = BalancerSvcClient::connect(addr.clone()).await
-        .unwrap_or_else(|err| panic!("Client could not connect to {addr}"));
+        .unwrap_or_else(|err| panic!("Client could not connect to {addr}; err: {err}"));
+    info!("Connected to {addr}");
 
-    // Client::builder()
-    //     .add_service(BalancerSvcClient::new(ClientRpc::new()))
-    //     .serve(addr)
-    //     .await.expect("Could not start server");
+    info!("Sending request");
+    let resp = client.request_work(tonic::Request::new(WorkRequest { name: "dummy-client".to_string() }))
+        .await.expect("Could not send grpc request");
+    info!("Received response: {:?}", resp);
 }
