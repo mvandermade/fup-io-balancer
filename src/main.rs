@@ -35,6 +35,6 @@ fn run() {
 }
 
 struct Things {
-    scanner: Vec<Box<dyn Scanner>>,
+    scanner: Vec<Scanner>,
     balancer: Balancer,
 }

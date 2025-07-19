@@ -2,11 +2,19 @@
 
 use ::crossbeam_channel::Sender;
 use ::std::path::PathBuf;
-use std::fmt::Debug;
-use std::iter::Scan;
+use ::std::fmt::Debug;
+use ::std::iter::Scan;
 
-pub trait Scanner : Debug {
-    fn run(&self) -> !;
+#[derive(Debug)]
+pub enum Scanner {
+    Real(RealScanner),
+    Mock(MockScanner),
+}
+
+impl Scanner {
+    pub fn run(&self) -> ! {
+        unimplemented!();
+    }
 }
 
 #[derive(Debug)]
@@ -15,21 +23,9 @@ pub struct RealScanner {
     pub sink: Sender<PostzegelEvent>,
 }
 
-impl Scanner for RealScanner {
-    fn run(&self) -> ! {
-        todo!()
-    }
-}
-
 #[derive(Debug)]
 pub struct MockScanner {
     pub sink: Sender<PostzegelEvent>,
-}
-
-impl Scanner for MockScanner {
-    fn run(&self) -> ! {
-        todo!()
-    }
 }
 
 #[derive(Debug)]
@@ -38,3 +34,14 @@ pub struct PostzegelEvent {
 }
 
 const _: () = assert!(size_of::<PostzegelEvent>() < 10);
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn implement_test() {
+        // panic!("{}", size_of::<PathBuf>());
+        panic!("{}", size_of::<Scanner>());
+    }
+}
