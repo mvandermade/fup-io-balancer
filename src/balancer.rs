@@ -1,6 +1,5 @@
 use crate::dispatcher::Dispatcher;
 use crate::dispatcher::AssignResult;
-use crate::dispatcher::WorkAssignment;
 use crate::postzegel::PostzegelEvent;
 use ::crossbeam_channel::Receiver;
 use ::log::debug;
@@ -31,7 +30,9 @@ impl Balancer {
                 Ok(event) => {
                     debug!("Got a postzegel event {}", event);
                     let assignment = self.dispatcher.try_assign(event.code_str()).await;
-                    if assignment != AssignResult::Assigned {
+                    if let AssignResult::Assigned(work_id) = assignment {
+                        debug!("Event {} assigned to worker {}", work_id.worker_id, event);
+                    } else {
                         debug!("Event {} not assigned, send to backlog", event);
                         self.backlog.push_back(event)
                     }

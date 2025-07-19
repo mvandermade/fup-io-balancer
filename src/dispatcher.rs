@@ -1,4 +1,6 @@
 use crate::rpc::balancer_svc_server::BalancerSvc;
+use crate::workers::WorkerId;
+use crate::workers::Workers;
 use ::dashmap::DashMap;
 use ::futures::StreamExt;
 use ::log::debug;
@@ -10,16 +12,15 @@ use ::std::sync::atomic;
 use ::std::sync::atomic::AtomicU32;
 use ::std::sync::atomic::AtomicU64;
 use ::std::sync::Arc;
+use ::tokio::sync::mpsc::Sender;
 use ::tokio::sync::Mutex;
 use ::tonic::IntoRequest;
-use crate::workers::{WorkerId, Workers};
-
-tonic::include_proto!("balancerapi");
+use crate::rpc::WorkAssignment;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct WorkId {
-    pub(crate) worker_id: u32,
-    pub(crate) task_id: u64,
+    pub worker_id: u32,
+    pub task_id: u64,
 }
 
 /// stores data about workers and in-flight tasks (but not backlog)
@@ -27,7 +28,7 @@ pub struct WorkId {
 pub struct Dispatcher {
     top_worker_id: AtomicU32,
     top_task_id: AtomicU64,
-    workers: Arc<Mutex<Workers>>,
+    workers: Arc<Mutex<Workers<Sender<WorkAssignment>>>>,
     in_flight: DashMap<WorkId, ()>,
 }
 
@@ -37,13 +38,13 @@ impl Dispatcher {
             top_worker_id: AtomicU32::new(0),
             top_task_id: AtomicU64::new(0),
             workers: Arc::new(Mutex::new(Workers::new())),
-            in_flight: Default::default()
+            in_flight: DashMap::new(),
         }
     }
 
-    pub async fn new_worker(&self) -> WorkerId {
+    pub async fn new_worker(&self, task_sender: Sender<WorkAssignment>) -> WorkerId {
         let worker_id = self.top_worker_id.fetch_add(1, atomic::Ordering::Relaxed);
-        self.workers.lock().await.add_new(worker_id);
+        self.workers.lock().await.add_new(worker_id, task_sender);
         worker_id
     }
 
@@ -71,19 +72,19 @@ impl Dispatcher {
             //TODO @mark: ^ make sure this stays the same if task times out or fails
             postzegel_code,
         };
-        let Some(worker) = self.workers.lock().await.find_available() else {
+        let Some((worker, sender)) = self.workers.lock().await.find_available() else {
             debug!("No workers available for task {task_id}");
             return AssignResult::NoWorkers;
         };
         let work_id = WorkId { worker_id: worker, task_id };
         self.in_flight.insert(work_id, ());
-        todo!("send to rpc");  //TODO @mark: TEMPORARY! REMOVE THIS!
-        AssignResult::Assigned
+        sender.send(work).await.expect("Failed to send work assignment to grpc channel");
+        AssignResult::Assigned(work_id)
     }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AssignResult {
-    Assigned,
+    Assigned(WorkId),
     NoWorkers,
 }
