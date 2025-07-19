@@ -64,5 +64,6 @@ async fn run(addr: Uri) {
             task_sender.send(WorkAcknowledgement { task_id: resp.task_id, error: "".to_string() });
         }
     });
+    thread::sleep(std::time::Duration::from_secs(10));  //TODO @mark: TEMPORARY! REMOVE THIS!
     info!("End of response stream")
 }
