@@ -2,6 +2,8 @@
 syntax = "proto3";
 package protoapi;
 
+option java_multiple_files = true;
+
 service Greeter {
   rpc SayHello (Request) returns (Reply);
 }
