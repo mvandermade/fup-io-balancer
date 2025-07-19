@@ -12,7 +12,7 @@ use ::std::sync::atomic::AtomicU64;
 use ::std::sync::Arc;
 use ::tokio::sync::Mutex;
 use ::tonic::IntoRequest;
-use crate::workers::Workers;
+use crate::workers::{WorkerId, Workers};
 
 tonic::include_proto!("balancerapi");
 
@@ -41,11 +41,17 @@ impl Dispatcher {
         }
     }
 
+    pub async fn new_worker(&self) -> WorkerId {
+        let worker_id = self.top_worker_id.fetch_add(1, atomic::Ordering::Relaxed);
+        self.workers.lock().await.add_new(worker_id);
+        worker_id
+    }
+
     pub async fn complete_work(&self, work_id: WorkId) {
         let ongoing_task = self.in_flight.remove(&work_id);
         if ongoing_task.is_some() {
             debug!("Got ack for work request {} by worker {}", work_id.task_id, work_id.worker_id);
-            self.workers.lock().await.add(work_id.worker_id);
+            self.workers.lock().await.mark_ready(work_id.worker_id);
         } else {
             error!("Got ack for work request {} that we not in progress by worker {}", work_id.task_id, work_id.worker_id);
             //TODO @mark: better error handling
@@ -53,7 +59,7 @@ impl Dispatcher {
     }
 
     /// Timeout or error
-    pub fn fail_work(&self, task_id: WorkId) {
+    pub async fn fail_work(&self, task_id: WorkId) {
         //TODO @mark: impl & call this
     }
 

@@ -38,8 +38,7 @@ impl BalancerSvc for BalancerRpc {
     type workStream = Pin<Box<dyn futures::Stream<Item = Result<WorkAssignment, tonic::Status>> + Send + 'static>>;
 
     async fn work(&self, request: tonic::Request<tonic::Streaming<WorkAcknowledgement>>) -> Result<tonic::Response<Self::workStream>, tonic::Status> {
-        let worker_id = self.top_worker_id.fetch_add(1, atomic::Ordering::SeqCst);
-        self.workers.insert(worker_id, WorkerState::Available);
+        let worker_id = self.dispatcher.new_worker().await;
 
         let mut request_stream = request.into_inner();
         while let Some(req) = request_stream.next().await {

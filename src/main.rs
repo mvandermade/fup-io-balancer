@@ -17,7 +17,9 @@ use ::std::panic;
 use ::std::path::PathBuf;
 use ::std::process::exit;
 use ::std::thread;
+use std::sync::Arc;
 use ::tonic::transport::Server;
+use crate::dispatcher::Dispatcher;
 
 mod dispatcher;
 mod rpc;
@@ -72,14 +74,16 @@ async fn run(addr: SocketAddr) {
         workers.push(scanner_worker);
     }
 
+    let dispatcher = Arc::new(Dispatcher::new());
+    let dispatcher_clone = dispatcher.clone();
     let balancer_worker = thread::Builder::new().name("balancer".to_string())
-        .spawn(|| Balancer::new(rcv).run())
+        .spawn(move || Balancer::new(rcv, dispatcher_clone).run())
         .expect("Failed to spawn scanner thread");
     workers.push(balancer_worker);
 
     info!("Going to listen on {}", addr);
     Server::builder()
-        .add_service(BalancerSvcServer::new(BalancerRpc::new()))
+        .add_service(BalancerSvcServer::new(BalancerRpc::new(dispatcher)))
         .serve(addr)
         .await.expect("Could not start server");
 
