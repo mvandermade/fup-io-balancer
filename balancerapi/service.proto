@@ -5,7 +5,7 @@ package balancerapi;
 option java_multiple_files = true;
 
 service BalancerSvc {
-  rpc request_work (stream WorkRequest) returns (stream WorkAssignment);
+  rpc work (stream WorkRequest) returns (stream WorkAssignment);
 }
 
 message WorkerAvailability {
