@@ -1,10 +1,13 @@
 #![allow(unused)]  //TODO @mark: TEMPORARY! REMOVE THIS!
 
 use crate::balancer::Balancer;
+use crate::cli::CliArgs;
 use crate::postzegel_event::PostzegelEvent;
+use crate::rpc::BalancerRpc;
 use crate::scanner::MockScanner;
 use crate::scanner::RealScanner;
 use crate::scanner::Scanner;
+use ::clap::Parser;
 use ::env_logger;
 use ::log::debug;
 use ::log::info;
@@ -12,8 +15,7 @@ use ::std::panic;
 use ::std::path::PathBuf;
 use ::std::process::exit;
 use ::std::thread;
-use clap::Parser;
-use crate::cli::CliArgs;
+use ::tonic::transport::Server;
 
 mod rpc;
 mod balancer;
@@ -22,7 +24,8 @@ mod postzegel_event;
 mod demos;
 mod cli;
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let args = CliArgs::parse();
 
     let default_log = match (args.quiet, args.verbose) {
@@ -49,7 +52,7 @@ fn main() {
     run();
 }
 
-fn run() {
+async fn run() {
     info!("Let's start some scanners!");
     let (snd, rcv) = crossbeam_channel::bounded::<PostzegelEvent>(1024);
 
@@ -67,6 +70,11 @@ fn run() {
         .spawn(|| Balancer::new(rcv).run())
         .expect("Failed to spawn scanner thread");
     workers.push(balancer_worker);
+
+    Server::builder()
+        .add_service(BalancerRpc::new())
+        .serve("0.0.0.0:1234".parse().unwrap())
+        .await.expect("Could not start server");
 
     info!("Started {} threads", workers.len());
     for worker in workers {

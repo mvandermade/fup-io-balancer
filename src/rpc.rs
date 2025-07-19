@@ -8,6 +8,12 @@ tonic::include_proto!("balancerapi");
 #[derive(Debug)]
 pub struct BalancerRpc {}
 
+impl BalancerRpc {
+    pub fn new() -> Self {
+        BalancerRpc {}
+    }
+}
+
 #[tonic::async_trait]
 impl BalancerSvc for BalancerRpc {
     async fn request_work(&self, request: tonic::Request<Request>) -> Result<Response<Reply>, Status> {
