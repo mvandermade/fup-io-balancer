@@ -17,9 +17,9 @@ use crate::workers::Workers;
 tonic::include_proto!("balancerapi");
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-struct WorkId {
-    worker_id: u32,
-    task_id: u64,
+pub struct WorkId {
+    pub(crate) worker_id: u32,
+    pub(crate) task_id: u64,
 }
 
 /// stores data about workers and in-flight tasks (but not backlog)
@@ -41,13 +41,13 @@ impl Dispatcher {
         }
     }
 
-    pub fn complete_work(&self, work_id: WorkId) {
+    pub async fn complete_work(&self, work_id: WorkId) {
         let ongoing_task = self.in_flight.remove(&work_id);
         if ongoing_task.is_some() {
-            debug!("Got ack for work request {} by worker {worker_id}", work_id.task_id);
-            self.workers.lock().add(work_id.worker_id);
+            debug!("Got ack for work request {} by worker {}", work_id.task_id, work_id.worker_id);
+            self.workers.lock().await.add(work_id.worker_id);
         } else {
-            error!("Got ack for work request {} that we not in progress by worker {worker_id}", work_id.task_id);
+            error!("Got ack for work request {} that we not in progress by worker {}", work_id.task_id, work_id.worker_id);
             //TODO @mark: better error handling
         }
     }
@@ -57,7 +57,7 @@ impl Dispatcher {
         //TODO @mark: impl & call this
     }
 
-    pub fn try_assign(&self, postzegel_code: String) -> Option<()> {
+    pub async fn try_assign(&self, postzegel_code: String) -> Option<()> {
         let task_id = self.top_task_id.fetch_add(1, atomic::Ordering::Relaxed);
         let work = WorkAssignment {
             task_id,
@@ -65,6 +65,12 @@ impl Dispatcher {
             //TODO @mark: ^ make sure this stays the same if task times out or fails
             postzegel_code,
         };
-        todo!()
+        let Some(worker) = self.workers.lock().await.find_available() else {
+            debug!("No workers available for task {task_id}");
+            return None;
+        };
+        let work_id = WorkId { worker_id: worker, task_id };
+        self.in_flight.insert(work_id, ());
+        Some(())
     }
 }

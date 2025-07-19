@@ -8,6 +8,14 @@ pub struct PostzegelEvent {
 }
 
 impl PostzegelEvent {
+    pub fn code_str(&self) -> String {
+        self.code.iter()
+            .map(|c| *c as char)
+            .collect()
+    }
+}
+
+impl PostzegelEvent {
     pub fn new(code: [u8; 9]) -> PostzegelEvent {
         for c in code {
             assert!(
@@ -21,10 +29,7 @@ impl PostzegelEvent {
 
 impl fmt::Display for PostzegelEvent {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for c in self.code {
-            write!(f, "{}", (c as char))?
-        }
-        Ok(())
+        write!(f, "{}", self.code_str())
     }
 }
 
@@ -87,5 +92,23 @@ mod tests {
         assert!(!is_valid_code_byte(b'z' + 1));
         assert!(!is_valid_code_byte(b'A' - 1));
         assert!(!is_valid_code_byte(b'Z' + 1));
+    }
+
+    #[test]
+    fn letters() {
+        let str = PostzegelEvent::new([b'a', b'b', b'c', b'd', b'e', b'f', b'G', b'H', b'I']).code_str();
+        assert_eq!(str, "abcdefGHI");
+    }
+
+    #[test]
+    fn code_str_digits() {
+        let str = PostzegelEvent::new([b'1', b'3', b'5', b'7', b'9', b'2', b'4', b'6', b'8']).code_str();
+        assert_eq!(str, "135792468");
+    }
+
+    #[test]
+    fn code_str_mixed() {
+        let str = PostzegelEvent::new([b'1', b'3', b'5', b'7', b'9', b'A', b'L', b'l', b'o']).code_str();
+        assert_eq!(str, "13579ALlo");
     }
 }

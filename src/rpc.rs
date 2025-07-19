@@ -10,7 +10,7 @@ use ::std::sync::atomic::AtomicU64;
 use std::sync::Arc;
 use ::tonic::IntoRequest;
 use log::error;
-use crate::dispatcher::Dispatcher;
+use crate::dispatcher::{Dispatcher, WorkId};
 
 tonic::include_proto!("balancerapi");
 
@@ -48,16 +48,8 @@ impl BalancerSvc for BalancerRpc {
             };
 
             debug!("Got ack for work request {}", ack.task_id);
-            let task_id = TaskId { worker_id, task_id: ack.task_id };
-
-
-            if ongoing_task.is_none() {
-                error!("Got ack for work request {} that we not in progress by worker {worker_id}", ack.task_id);
-            } else {
-                debug!("Got ack for work request {} by worker {worker_id}", ack.task_id);
-                self.workers.insert(worker_id, WorkerState::Available);
-            }
-            //TODO @mark: make sure we get ack for each work request, otherwise re-send
+            let task_id = WorkId { worker_id, task_id: ack.task_id };
+            self.dispatcher.complete_work(task_id);
         }
 
         todo!();

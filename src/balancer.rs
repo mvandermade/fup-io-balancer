@@ -25,7 +25,7 @@ impl Balancer {
             match self.source.recv() {
                 Ok(event) => {
                     debug!("Got a postzegel event {}", event);
-                    self.dispatcher.try_assign(event.code_str())
+                    let task = self.dispatcher.try_assign(event.code_str());
                 },
                 Err(_) => panic!("channel disconnected, cannot get more events"),
             }

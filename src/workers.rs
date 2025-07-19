@@ -20,4 +20,12 @@ impl Workers {
     pub fn add(&mut self, worker: WorkerId) {
         self.available.push_back(worker);
     }
+
+    pub fn find_available(&mut self) -> Option<WorkerId> {
+        let worker = self.available.pop_front();
+        if let Some(worker) = worker {
+            self.busy.push_back(worker);
+        }
+        worker
+    }
 }
