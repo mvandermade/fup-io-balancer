@@ -18,11 +18,17 @@ struct TaskId {
     task_id: u64,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+enum WorkerState {
+    Busy,
+    Available,
+}
+
 #[derive(Debug)]
 pub struct BalancerRpc {
     top_worker_id: AtomicU32,
     top_task_id: AtomicU64,
-    workers: DashMap<u32, ()>,
+    workers: DashMap<u32, WorkerState>,
     in_flight: DashMap<TaskId, ()>,
 }
 
@@ -51,6 +57,7 @@ impl BalancerSvc for BalancerRpc {
 
     async fn work(&self, request: tonic::Request<tonic::Streaming<WorkAcknowledgement>>) -> Result<tonic::Response<Self::workStream>, tonic::Status> {
         let worker_id = self.top_worker_id.fetch_add(1, atomic::Ordering::SeqCst);
+        self.workers.insert(worker_id, WorkerState::Available);
 
         let mut request_stream = request.into_inner();
         while let Some(req) = request_stream.next().await {
@@ -64,6 +71,7 @@ impl BalancerSvc for BalancerRpc {
                 error!("Got ack for work request {} that we not in progress by worker {worker_id}", ack.task_id);
             } else {
                 debug!("Got ack for work request {} by worker {worker_id}", ack.task_id);
+                self.workers.insert(worker_id, WorkerState::Available);
             }
             //TODO @mark: make sure we get ack for each work request, otherwise re-send
         }

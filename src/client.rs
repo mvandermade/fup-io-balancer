@@ -51,8 +51,8 @@ async fn run(addr: Uri) {
     info!("Connected to {addr}");
 
     info!("Sending request");
-    let req = WorkRequest { request: Some(Request::Availability(WorkerAvailability { name: "dummy-client".to_string() })) };
-    let resp = client.request_work(tonic::Request::new(req))
-        .await.expect("Could not send grpc request");
-    info!("Received response: {:?}", resp);
+    // let req = WorkRequest { request: Some(Request::Availability(WorkerAvailability { name: "dummy-client".to_string() })) };
+    // let resp = client.request_work(tonic::Request::new(req))
+    //     .await.expect("Could not send grpc request");
+    // info!("Received response: {:?}", resp);
 }
