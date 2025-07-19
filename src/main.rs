@@ -12,15 +12,32 @@ use ::std::panic;
 use ::std::path::PathBuf;
 use ::std::process::exit;
 use ::std::thread;
+use clap::Parser;
+use crate::cli::CliArgs;
 
 mod scanner;
 mod balancer;
 mod postzegel_event;
 mod demos;
+mod cli;
 
 fn main() {
-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
-    info!("use RUST_LOG=... to change log level (debug/info/warn/error)");
+    let args = CliArgs::parse();
+
+    let default_log = match (args.quiet, args.verbose) {
+        (true, true) => unreachable!(),
+        (true, false) => "error",
+        (false, true) => "debug",
+        (false, false) => {
+            "info"
+        },
+    };
+    env_logger::init_from_env(
+        env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, default_log),
+    );
+    if default_log == "info" {
+        info!("Pass -v or -q as cli args, or alternatively use RUST_LOG=... to change log level (debug/info/warn/error)");
+    }
     panic::set_hook(Box::new(|info| {
         let thread = thread::current();
         let name = thread.name().unwrap_or("unnamed");
