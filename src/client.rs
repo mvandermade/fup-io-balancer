@@ -14,6 +14,7 @@ use ::tonic::Response;
 use ::tonic::Status;
 use tonic::transport::Uri;
 use crate::balancer_svc_client::BalancerSvcClient;
+use crate::work_request::Request;
 
 tonic::include_proto!("balancerapi");
 
@@ -51,7 +52,8 @@ async fn run(addr: Uri) {
     info!("Connected to {addr}");
 
     info!("Sending request");
-    let resp = client.request_work(tonic::Request::new(WorkRequest { name: "dummy-client".to_string() }))
+    let req = WorkRequest { request: Some(Request::Availability(WorkerAvailability { name: "dummy-client".to_string() })) };
+    let resp = client.request_work(tonic::Request::new(req))
         .await.expect("Could not send grpc request");
     info!("Received response: {:?}", resp);
 }

@@ -5,13 +5,26 @@ package balancerapi;
 option java_multiple_files = true;
 
 service BalancerSvc {
-  rpc request_work (WorkRequest) returns (WorkResponse);
+  rpc request_work (stream WorkRequest) returns (stream WorkAssignment);
 }
 
-message WorkRequest {
+message WorkerAvailability {
   string name = 1;
 }
 
-message WorkResponse {
-  string message = 1;
+message WorkAcknowledgement {
+  uint64 work_id = 1;
+}
+
+message WorkRequest {
+  oneof request {
+    WorkerAvailability availability = 1;
+    WorkAcknowledgement ack = 2;
+  }
+}
+
+message WorkAssignment {
+  uint64 work_id = 1;
+  uint64 idem_id = 3;
+  string postzegel_code = 2;
 }
