@@ -40,7 +40,7 @@ fn run() {
         //TODO @mark: make a real scanner?
         let snd_copy = snd.clone();
         let scanner_worker = thread::Builder::new().name(format!("scanner{nr}"))
-            .spawn(move || MockScanner::new(format!("scanner{nr}"), snd_copy).run())
+            .spawn(move || MockScanner::new(nr, snd_copy).run())
             .expect("Failed to spawn scanner thread");
         workers.push(scanner_worker);
     }
