@@ -23,6 +23,7 @@ tokio = { version = "1.46.1", features = ["macros", "rt-multi-thread"] }
 prost = "0.13.1"
 tonic = "0.13.1"
 futures = "0.3.31"
+dashmap = "6.1.0"
 # prost and tonic versions must match!
 
 [build-dependencies]
