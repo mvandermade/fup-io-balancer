@@ -24,8 +24,9 @@ mod rpc;
 mod balancer;
 mod scanner;
 mod postzegel_event;
-mod demos;
+mod workers;
 mod cli;
+mod demos;
 
 #[tokio::main]
 async fn main() {
