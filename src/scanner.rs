@@ -28,3 +28,9 @@ pub struct MockScanner {
     pub sink: Sender<PostzegelEvent>,
 }
 
+impl MockScanner {
+    pub fn new(sink: Sender<PostzegelEvent>) -> Scanner {
+        Scanner::Mock(MockScanner { sink })
+    }
+}
+

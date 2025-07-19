@@ -29,15 +29,23 @@ fn main() {
 }
 
 fn run() {
-    info!("Let's start some scnanners!");
+    info!("Let's start some scanners!");
     let (snd, rcv) = crossbeam_channel::bounded::<PostzegelEvent>(1024);
-    let scanner1 = RealScanner { address: PathBuf::from("/dev/ttyUSB0"), sink: snd.clone() };
-    let scanner2 = MockScanner { sink: snd.clone() };
-    let balancer = Balancer { source: rcv };
-    balancer.run();
-}
 
-struct Things {
-    scanner: Vec<Scanner>,
-    balancer: Balancer,
+    let mut workers = Vec::with_capacity(8);
+    for nr in 1 ..= 3 {
+        //TODO @mark: make a real scanner?
+        let snd_copy = snd.clone();
+        let scanner_worker = thread::Builder::new().name(format!("scanner{nr}"))
+            .spawn(|| MockScanner::new(snd_copy).run())
+            .expect("Failed to spawn scanner thread");
+        workers.push(scanner_worker);
+    }
+
+    let balancer_worker = thread::Builder::new().name("balancer".to_string())
+        .spawn(|| Balancer::new(rcv).run())
+        .expect("Failed to spawn scanner thread");
+    workers.push(balancer_worker);
+
+    info!("Started {} threads", workers.len());
 }

@@ -9,6 +9,12 @@ pub struct Balancer {
 }
 
 impl Balancer {
+    pub fn new(source: Receiver<PostzegelEvent>) -> Self {
+        Balancer { source }
+    }
+}
+
+impl Balancer {
     pub fn run(&self) -> ! {
         info!("Going to wait for postzegel events");
         loop {
