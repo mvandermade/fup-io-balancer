@@ -1,3 +1,4 @@
+use std::net::SocketAddr;
 use ::clap::Parser;
 
 #[derive(Parser, Debug)]
@@ -11,6 +12,9 @@ pub struct CliArgs {
     /// Run in quiet mode
     #[arg(short = 'q', conflicts_with = "verbose")]
     pub quiet: bool,
+    /// The ip and port to listen on
+    #[arg(short = 'b', default_value = "127.0.0.1:7331")]
+    pub addr: SocketAddr,
 }
 
 #[test]

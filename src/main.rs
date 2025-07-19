@@ -3,6 +3,7 @@
 use crate::balancer::Balancer;
 use crate::cli::CliArgs;
 use crate::postzegel_event::PostzegelEvent;
+use crate::rpc::balancer_svc_server::BalancerSvcServer;
 use crate::rpc::BalancerRpc;
 use crate::scanner::MockScanner;
 use crate::scanner::RealScanner;
@@ -11,6 +12,7 @@ use ::clap::Parser;
 use ::env_logger;
 use ::log::debug;
 use ::log::info;
+use ::std::net::SocketAddr;
 use ::std::panic;
 use ::std::path::PathBuf;
 use ::std::process::exit;
@@ -49,10 +51,10 @@ async fn main() {
         exit(2)
     }));
 
-    run();
+    run(args.addr).await;
 }
 
-async fn run() {
+async fn run(addr: SocketAddr) {
     info!("Let's start some scanners!");
     let (snd, rcv) = crossbeam_channel::bounded::<PostzegelEvent>(1024);
 
@@ -71,9 +73,10 @@ async fn run() {
         .expect("Failed to spawn scanner thread");
     workers.push(balancer_worker);
 
+    info!("Going to listen on {}", addr);
     Server::builder()
-        .add_service(BalancerRpc::new())
-        .serve("0.0.0.0:1234".parse().unwrap())
+        .add_service(BalancerSvcServer::new(BalancerRpc::new()))
+        .serve(addr)
         .await.expect("Could not start server");
 
     info!("Started {} threads", workers.len());

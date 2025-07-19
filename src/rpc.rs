@@ -5,7 +5,7 @@ use ::tonic::Status;
 
 tonic::include_proto!("balancerapi");
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BalancerRpc {}
 
 impl BalancerRpc {
