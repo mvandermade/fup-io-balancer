@@ -12,6 +12,9 @@ use ::tonic::transport::Server;
 
 use ::tonic::Response;
 use ::tonic::Status;
+use futures::StreamExt;
+use tokio::sync::mpsc::channel;
+use tonic::codegen::tokio_stream::wrappers::ReceiverStream;
 use tonic::transport::Uri;
 use crate::balancer_svc_client::BalancerSvcClient;
 
@@ -50,9 +53,14 @@ async fn run(addr: Uri) {
         .unwrap_or_else(|err| panic!("Client could not connect to {addr}; err: {err}"));
     info!("Connected to {addr}");
 
-    info!("Sending request");
-    // let req = WorkRequest { request: Some(Request::Availability(WorkerAvailability { name: "dummy-client".to_string() })) };
-    // let resp = client.request_work(tonic::Request::new(req))
-    //     .await.expect("Could not send grpc request");
-    // info!("Received response: {:?}", resp);
+    let (task_sender, task_receiver) = channel::<WorkAcknowledgement>(1);
+    let outbound_stream = ReceiverStream::new(task_receiver);
+    let response_stream = client.work(tonic::Request::new(outbound_stream))
+        .await.expect("Could not send grpc request");
+    response_stream.into_inner().for_each(|resp| async {
+        info!("Received response: {:?}", resp);
+        if let Ok(resp) = resp {
+            task_sender.send(WorkAcknowledgement { task_id: resp.task_id, error: "".to_string() });
+        }
+    });
 }

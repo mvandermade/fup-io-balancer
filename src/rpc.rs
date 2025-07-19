@@ -44,6 +44,7 @@ impl BalancerSvc for BalancerRpc {
         let (task_sender, task_receiver) = channel::<WorkAssignment>(1);
         let worker_id = self.dispatcher.new_worker(task_sender).await;
 
+        todo!("move this while loop to thread or async task");
         let mut request_stream = request.into_inner();
         while let Some(req) = request_stream.next().await {
             let Ok(ack) = req else {
