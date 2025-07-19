@@ -1,5 +1,5 @@
 use crate::balancer::Balancer;
-use crate::scanner::PostzegelEvent;
+use crate::scanner::{MockScanner, PostzegelEvent, RealScanner};
 use crate::scanner::Scanner;
 use ::env_logger;
 use ::log::debug;
@@ -28,9 +28,13 @@ fn main() {
 fn run() {
     info!("Let's start some scnanners!");
     let (snd, rcv) = crossbeam_channel::bounded::<PostzegelEvent>(1024);
-    let scanner1 = Scanner { address: PathBuf::from("/dev/ttyUSB0"), sink: snd.clone() };
-    let scanner2 = Scanner { address: PathBuf::from("/dev/ttyUSB1"), sink: snd.clone() };
+    let scanner1 = RealScanner { address: PathBuf::from("/dev/ttyUSB0"), sink: snd.clone() };
+    let scanner2 = MockScanner { sink: snd.clone() };
     let balancer = Balancer { source: rcv };
     balancer.run();
 }
 
+struct Things {
+    scanner: Vec<Box<dyn Scanner>>,
+    balancer: Balancer,
+}

@@ -2,11 +2,34 @@
 
 use ::crossbeam_channel::Sender;
 use ::std::path::PathBuf;
+use std::fmt::Debug;
+use std::iter::Scan;
+
+pub trait Scanner : Debug {
+    fn run(&self) -> !;
+}
 
 #[derive(Debug)]
-pub struct Scanner {
+pub struct RealScanner {
     pub address: PathBuf,
     pub sink: Sender<PostzegelEvent>,
+}
+
+impl Scanner for RealScanner {
+    fn run(&self) -> ! {
+        todo!()
+    }
+}
+
+#[derive(Debug)]
+pub struct MockScanner {
+    pub sink: Sender<PostzegelEvent>,
+}
+
+impl Scanner for MockScanner {
+    fn run(&self) -> ! {
+        todo!()
+    }
 }
 
 #[derive(Debug)]
