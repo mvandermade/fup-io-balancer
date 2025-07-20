@@ -57,7 +57,6 @@ impl BalancerSvc for BalancerRpc {
                     Err(err) => {
                         warn!("Could not read message from worker {worker_id}, it might have disconnected and will be unregistered ({err})");
                         let worker_id = dispatcher_clone.remove_worker(worker_id).await;
-                        //TODO @mark: what if it was busy
                         break;
                     },
                 };

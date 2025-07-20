@@ -90,6 +90,7 @@ impl Dispatcher {
     pub async fn fail_work(&self, task_id: WorkId, reason: FailReason) {
         self.in_flight.remove(&task_id);
         info!("Task {} for worker {} failed: {}", task_id.task_id, task_id.worker_id, reason);
+        //TODO @mark: add it back to queue
         //TODO @mark: impl timeout
     }
 

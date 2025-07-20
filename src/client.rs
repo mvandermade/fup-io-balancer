@@ -66,11 +66,18 @@ async fn run(args: &ClientArgs) {
     let mut work_stream = client.work(tonic::Request::new(outbound_stream))
         .await.expect("Could not send grpc request")
         .into_inner();
+    let mut ack_sent = 0;
     while let Some(resp) = work_stream.next().await {
         info!("Received work request: {:?}", resp);
         if let Ok(resp) = resp {
-            debug!("Acknowledging task: {:?}", resp.task_id);
-            task_sender.send(WorkAcknowledgement { task_id: resp.task_id, error: "".to_string() });
+            let max_ack = args.max_ack.unwrap_or(u32::MAX);
+            if args.max_ack.is_none() || ack_sent < max_ack {
+                ack_sent += 1;
+                debug!("Acknowledging task {:?} (#{})", resp.task_id, ack_sent);
+                task_sender.send(WorkAcknowledgement { task_id: resp.task_id, error: "".to_string() });
+            } else {
+                debug!("Not acknowledging task {:?} because at most {} tasks can be acknowledged (cli config)", resp.task_id, max_ack);
+            }
         }
     }
     info!("End of response stream (server might have stopped, or kicked us)");
