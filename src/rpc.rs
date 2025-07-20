@@ -1,4 +1,4 @@
-use crate::dispatcher::Dispatcher;
+use crate::dispatcher::{Dispatcher, FailReason};
 use crate::dispatcher::WorkId;
 use crate::rpc::balancer_svc_server::BalancerSvc;
 use ::dashmap::DashMap;
@@ -56,7 +56,7 @@ impl BalancerSvc for BalancerRpc {
                     Ok(ack) => ack,
                     Err(err) => {
                         warn!("Could not read message from worker {worker_id}, it might have disconnected and will be unregistered ({err})");
-                        let worker_id = self.dispatcher.remove_worker(worker_id).await;
+                        let worker_id = dispatcher_clone.remove_worker(worker_id).await;
                         //TODO @mark: what if it was busy
                         break;
                     },
@@ -67,7 +67,7 @@ impl BalancerSvc for BalancerRpc {
                 if ack.error.is_empty() {
                     dispatcher_clone.complete_work(task_id);
                 } else {
-                    dispatcher_clone.fail_work(task_id);
+                    dispatcher_clone.fail_work(task_id, FailReason::Error(ack.error));
                 }
             }
             info!("Empty work rpc stream for worker {}", worker_id);

@@ -81,7 +81,8 @@ impl Dispatcher {
             debug!("Got ack for work request {} by worker {}", work_id.task_id, work_id.worker_id);
             self.workers.lock().await.mark_ready(work_id.worker_id);
         } else {
-            error!("Got ack for work request {} that we not in progress by worker {}", work_id.task_id, work_id.worker_id);
+            error!("Got ack for work request {} that we not in progress by worker {} \
+                (it might have timed out)", work_id.task_id, work_id.worker_id);
             //TODO @mark: better error handling
         }
     }

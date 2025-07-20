@@ -13,10 +13,11 @@ use ::tonic::transport::Server;
 use ::tonic::Response;
 use ::tonic::Status;
 use futures::StreamExt;
+use log::warn;
 use tokio::io::AsyncWriteExt;
 use tokio::sync::mpsc::channel;
 use tonic::codegen::tokio_stream::wrappers::ReceiverStream;
-use tonic::transport::Uri;
+use tonic::transport::{Channel, Error, Uri};
 use crate::balancer_svc_client::BalancerSvcClient;
 
 tonic::include_proto!("balancerapi");
@@ -50,8 +51,16 @@ async fn run(addr: Uri) {
     info!("Starting test client, connecting to {addr}");
 
     assert!(addr.scheme().is_some(), "Provide a protocol to -a, like http:// or https://");
-    let mut client = BalancerSvcClient::connect(addr.clone()).await
-        .unwrap_or_else(|err| panic!("Client could not connect to {addr}; err: {err}"));
+    let mut client = loop {
+        match BalancerSvcClient::connect(addr.clone()).await {
+            Ok(client) => break client,
+            Err(err) => {
+                warn!("Client could not connect to {addr}; err: {err}; will retry");
+                thread::sleep(::std::time::Duration::from_secs(2));
+            }
+        }
+    };
+
     info!("Connected to {addr}");
 
     let (task_sender, task_receiver) = channel::<WorkAcknowledgement>(1);
@@ -66,5 +75,5 @@ async fn run(addr: Uri) {
             task_sender.send(WorkAcknowledgement { task_id: resp.task_id, error: "".to_string() });
         }
     }
-    info!("End of response stream");
+    info!("End of response stream (server might have stopped, or kicked us)");
 }
