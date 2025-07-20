@@ -22,6 +22,10 @@ impl <T: Clone> Workers<T> {
         assert!(!self.busy.contains_key(&worker));
         self.available.push_back((worker, data));
     }
+    pub fn remove(&mut self, worker: WorkerId) {
+        self.busy.remove(&worker);
+        //TODO @mark: also remove from available
+    }
 
     pub fn mark_ready(&mut self, worker: WorkerId) {
         let existing = self.busy.remove(&worker);

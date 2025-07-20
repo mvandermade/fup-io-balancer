@@ -16,6 +16,7 @@ use ::tokio::task;
 use ::tonic::codegen::tokio_stream::wrappers::ReceiverStream;
 use ::tonic::IntoRequest;
 use ::tonic::Status;
+use log::warn;
 
 tonic::include_proto!("balancerapi");
 
@@ -53,7 +54,12 @@ impl BalancerSvc for BalancerRpc {
             while let Some(req) = request_stream.next().await {
                 let ack = match req {
                     Ok(ack) => ack,
-                    Err(err) => panic!("error reading work request: {err}"),
+                    Err(err) => {
+                        warn!("Could not read message from worker {worker_id}, it might have disconnected and will be unregistered ({err})");
+                        let worker_id = self.dispatcher.remove_worker(worker_id).await;
+                        //TODO @mark: what if it was busy
+                        break;
+                    },
                 };
 
                 debug!("Got ack for work request {}", ack.task_id);
@@ -63,7 +69,7 @@ impl BalancerSvc for BalancerRpc {
                 } else {
                     dispatcher_clone.fail_work(task_id);
                 }
-        }
+            }
             info!("Empty work rpc stream for worker {}", worker_id);
         });
 

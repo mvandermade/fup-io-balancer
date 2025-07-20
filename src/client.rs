@@ -13,6 +13,7 @@ use ::tonic::transport::Server;
 use ::tonic::Response;
 use ::tonic::Status;
 use futures::StreamExt;
+use tokio::io::AsyncWriteExt;
 use tokio::sync::mpsc::channel;
 use tonic::codegen::tokio_stream::wrappers::ReceiverStream;
 use tonic::transport::Uri;
@@ -65,5 +66,5 @@ async fn run(addr: Uri) {
             task_sender.send(WorkAcknowledgement { task_id: resp.task_id, error: "".to_string() });
         }
     }
-    info!("End of response stream")
+    info!("End of response stream");
 }

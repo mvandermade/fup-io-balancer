@@ -12,9 +12,11 @@ use ::std::sync::atomic;
 use ::std::sync::atomic::AtomicU32;
 use ::std::sync::atomic::AtomicU64;
 use ::std::sync::Arc;
+use std::fmt;
 use ::tokio::sync::mpsc::Sender;
 use ::tokio::sync::Mutex;
 use ::tonic::IntoRequest;
+use log::warn;
 use crate::rpc::WorkAssignment;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -30,6 +32,23 @@ pub struct Dispatcher {
     top_task_id: AtomicU64,
     workers: Arc<Mutex<Workers<Sender<WorkAssignment>>>>,
     in_flight: DashMap<WorkId, ()>,
+}
+
+#[derive(Debug)]
+pub enum FailReason {
+    Disconnect,
+    Timeout,
+    Error(String),
+}
+
+impl fmt::Display for FailReason {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            FailReason::Disconnect => write!(f, "worker disconnected"),
+            FailReason::Timeout => write!(f, "task timed out"),
+            FailReason::Error(msg) => write!(f, "failed: {}", msg),
+        }
+    }
 }
 
 impl Dispatcher {
@@ -48,6 +67,14 @@ impl Dispatcher {
         worker_id
     }
 
+    pub async fn remove_worker(&self, worker_id: WorkerId) {
+        self.workers.lock().await.remove(worker_id);
+        let ongoing_task = self.in_flight.remove(&WorkId { worker_id, task_id: 0 });
+        if let Some((task, _)) = ongoing_task {
+            self.fail_work(task, FailReason::Disconnect).await;
+        }
+    }
+
     pub async fn complete_work(&self, work_id: WorkId) {
         let ongoing_task = self.in_flight.remove(&work_id);
         if ongoing_task.is_some() {
@@ -59,9 +86,10 @@ impl Dispatcher {
         }
     }
 
-    /// Timeout or error
-    pub async fn fail_work(&self, task_id: WorkId) {
-        //TODO @mark: impl & call this
+    pub async fn fail_work(&self, task_id: WorkId, reason: FailReason) {
+        self.in_flight.remove(&task_id);
+        info!("Task {} for worker {} failed: {}", task_id.task_id, task_id.worker_id, reason);
+        //TODO @mark: impl timeout
     }
 
     pub async fn try_assign(&self, postzegel_code: String) -> AssignResult {
