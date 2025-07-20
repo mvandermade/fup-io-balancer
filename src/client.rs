@@ -55,15 +55,15 @@ async fn run(addr: Uri) {
 
     let (task_sender, task_receiver) = channel::<WorkAcknowledgement>(1);
     let outbound_stream = ReceiverStream::new(task_receiver);
-    let response_stream = client.work(tonic::Request::new(outbound_stream))
-        .await.expect("Could not send grpc request");
-    response_stream.into_inner().for_each(|resp| async {
+    let mut response_stream = client.work(tonic::Request::new(outbound_stream))
+        .await.expect("Could not send grpc request")
+        .into_inner();
+    while let Some(resp) = response_stream.next().await {
         info!("Received response: {:?}", resp);
         if let Ok(resp) = resp {
             debug!("Acknowledging task: {:?}", resp.task_id);
             task_sender.send(WorkAcknowledgement { task_id: resp.task_id, error: "".to_string() });
         }
-    });
-    thread::sleep(std::time::Duration::from_secs(10));  //TODO @mark: TEMPORARY! REMOVE THIS!
+    }
     info!("End of response stream")
 }
