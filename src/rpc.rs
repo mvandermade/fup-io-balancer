@@ -33,13 +33,6 @@ impl BalancerRpc {
 
 #[tonic::async_trait]
 impl BalancerSvc for BalancerRpc {
-    // async fn request_work(&self, request: tonic::Request<WorkRequest>) -> Result<tonic::Response<WorkResponse>, tonic::Status> {
-    //     let req = request.into_inner();
-    //     info!("got request named {}, sending response", req.name);
-    //     Ok(tonic::Response::new(WorkResponse {
-    //         message: format!("Hello, {}!", req.name),
-    //     }))
-    // }
 
     type workStream = Pin<Box<dyn futures::Stream<Item=Result<WorkAssignment, tonic::Status>> + Send + 'static>>;
 
@@ -48,25 +41,26 @@ impl BalancerSvc for BalancerRpc {
         let worker_id = self.dispatcher.new_worker(task_sender).await;
 
         let dispatcher_clone = self.dispatcher.clone();
-        task::spawn(async move {
-            debug!("Starting work rpc acknowledge listening stream for worker {}", worker_id);
-            let mut request_stream = request.into_inner();
-            while let Some(req) = request_stream.next().await {
-                let ack = match req {
-                    Ok(ack) => ack,
-                    Err(err) => {
-                        warn!("Could not read message from worker {worker_id}, it might have disconnected and will be unregistered ({err})");
-                        let worker_id = dispatcher_clone.remove_worker(worker_id).await;
-                        break;
-                    },
-                };
+        let mut request_stream = request.into_inner();
 
-                debug!("Got ack for work request {}", ack.task_id);
-                let task_id = WorkId { worker_id, task_id: ack.task_id };
-                if ack.error.is_empty() {
-                    dispatcher_clone.complete_work(task_id);
-                } else {
-                    dispatcher_clone.fail_work(task_id, FailReason::Error(ack.error));
+        tokio::spawn(async move {
+            debug!("Starting work rpc acknowledge listening stream for worker {}", worker_id);
+            while let Some(req) = request_stream.next().await {
+                match req {
+                    Ok(ack) => {
+                        debug!("Got ack for work request {}", ack.task_id);
+                        let task_id = WorkId { worker_id: worker_id, task_id: ack.task_id };
+                        if ack.error.is_empty() {
+                            dispatcher_clone.complete_work(task_id);
+                        } else {
+                            dispatcher_clone.fail_work(task_id, FailReason::Error(ack.error));
+                        }
+                    }
+                    Err(err) => {
+                        warn!("Could not read message from worker {worker_id}, will be unregistered ({err})");
+                        dispatcher_clone.remove_worker(worker_id).await;
+                        break;
+                    }
                 }
             }
             info!("Empty work rpc stream for worker {}", worker_id);
@@ -74,6 +68,7 @@ impl BalancerSvc for BalancerRpc {
 
         debug!("Starting work rpc task sending stream for worker {}", worker_id);
         let outbound_stream = ReceiverStream::new(task_receiver);
-        Ok(tonic::Response::new(Box::pin(outbound_stream.map(|work| Ok(work)))))
+        Ok(tonic::Response::new(Box::pin(outbound_stream.map(Ok))))
     }
+
 }
