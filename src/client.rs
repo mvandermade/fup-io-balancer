@@ -33,8 +33,11 @@ pub struct ClientArgs {
     #[arg(short = 'a', long, default_value = "http://127.0.0.1:7331")]
     pub addr: Uri,
     /// How many times to retry the initial connection (does not reconnect if disconnected later)
-    #[arg(short = 'r', long, default_value = "1000")]
+    #[arg(long, default_value = "1000")]
     pub max_connection_retry: u32,
+    /// Debug option to stop sending ack after some iterations
+    #[arg(long)]
+    pub max_ack: Option<u32>,
 }
 
 #[test]
@@ -49,23 +52,22 @@ async fn main() {
         env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "info"),
     );
 
-    run(args.addr, args.max_connection_retry).await;
+    run(&args).await;
 }
 
-async fn run(addr: Uri, max_connection_retry: u32) {
-    info!("Starting test client, connecting to {addr}");
+async fn run(args: &ClientArgs) {
+    info!("Starting test client, connecting to {}", args.addr);
 
-    assert!(addr.scheme().is_some(), "Provide a protocol to -a, like http:// or https://");
-    let mut client = connect_with_retry(&addr, max_connection_retry).await;
-    info!("Connected to {addr}");
+    let mut client = connect_with_retry(&args.addr, args.max_connection_retry).await;
+    info!("Connected to {}", args.addr);
 
     let (task_sender, task_receiver) = channel::<WorkAcknowledgement>(1);
     let outbound_stream = ReceiverStream::new(task_receiver);
-    let mut response_stream = client.work(tonic::Request::new(outbound_stream))
+    let mut work_stream = client.work(tonic::Request::new(outbound_stream))
         .await.expect("Could not send grpc request")
         .into_inner();
-    while let Some(resp) = response_stream.next().await {
-        info!("Received response: {:?}", resp);
+    while let Some(resp) = work_stream.next().await {
+        info!("Received work request: {:?}", resp);
         if let Ok(resp) = resp {
             debug!("Acknowledging task: {:?}", resp.task_id);
             task_sender.send(WorkAcknowledgement { task_id: resp.task_id, error: "".to_string() });
@@ -75,18 +77,15 @@ async fn run(addr: Uri, max_connection_retry: u32) {
 }
 
 async fn connect_with_retry(addr: &Uri, max_connection_retry: u32) -> BalancerSvcClient<Channel> {
-    let mut attempt = 0;
-    loop {
-        attempt += 1;
-        if attempt > max_connection_retry {
-            panic!("Could not connect to {addr} after {max_connection_retry} attempts");
-        }
+    assert!(addr.scheme().is_some(), "Provide a protocol to -a, like http:// or https://");
+    for attempt in 0 .. max_connection_retry {
         match BalancerSvcClient::connect(addr.clone()).await {
-            Ok(client) => break client,
+            Ok(client) => return client,
             Err(err) => {
-                warn!("Client could not connect to {addr}; err: {err}; retrying ({attempt}/{max_connection_retry})...");
+                warn!("Client could not connect to {addr}; err: {err}; retrying ({}/{})...", attempt + 1, max_connection_retry + 1);
                 thread::sleep(time::Duration::from_secs(2));
             }
         }
     }
+    panic!("Could not connect to {addr} after {} attempts", max_connection_retry + 1);
 }
