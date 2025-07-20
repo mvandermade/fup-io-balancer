@@ -66,7 +66,7 @@ async fn run(addr: SocketAddr) {
     //TODO @mark: use scoped threads, if we figure out how to add a thread name to those
 
     let mut workers = Vec::with_capacity(8);
-    for nr in 1 ..= 3 {
+    for nr in 1 ..= 2 {
         //TODO @mark: make a real scanner?
         let snd_copy = snd.clone();
         let scanner_worker = thread::Builder::new().name(format!("scanner{nr}"))
