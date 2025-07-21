@@ -5,7 +5,7 @@
 ## Setup
 
 * Must install
-  * `protoc`
+  * `protoc` (`brew install protobuf`)
   * `cargo`/`rust`
 
 * Run server
@@ -28,3 +28,5 @@
 - handle ack timeouts responses
 - stats
 
+# Docker
+Use the Dockerfile to build an image for your architecture. Or run a GitHub action and publish it.
