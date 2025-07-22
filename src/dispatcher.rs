@@ -5,6 +5,7 @@ use ::dashmap::DashMap;
 use ::log::debug;
 use ::log::error;
 use ::log::info;
+use ::log::warn;
 use ::std::fmt;
 use ::std::sync::atomic;
 use ::std::sync::atomic::AtomicU32;
@@ -31,7 +32,7 @@ pub struct Dispatcher {
 #[derive(Debug)]
 pub enum FailReason {
     Disconnect,
-    Timeout,  //TODO @mark: 
+    Timeout,  //TODO @mark:
     Error(String),
 }
 
@@ -82,8 +83,12 @@ impl Dispatcher {
     }
 
     pub async fn fail_work(&self, task_id: WorkId, reason: FailReason) {
-        self.in_flight.remove(&task_id);
-        info!("Task {} for worker {} failed: {}", task_id.task_id, task_id.worker_id, reason);
+        let existing = self.in_flight.remove(&task_id);
+        if existing.is_some() {
+            info!("Task {} for worker {} failed: {}", task_id.task_id, task_id.worker_id, reason);
+        } else {
+            warn!("Task {} for worker {} marked as failed, but was not found: {}", task_id.task_id, task_id.worker_id, reason);
+        }
         //TODO @mark: add it back to queue
         //TODO @mark: impl timeout
     }

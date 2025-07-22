@@ -65,7 +65,6 @@ async fn run(args: &ClientArgs) {
         .await.expect("Could not send grpc request")
         .into_inner();
     let mut ack_sent = 0;
-    task_sender.send(WorkAcknowledgement { task_id: 0, error: "TEST".to_string() }).await.unwrap();  //TODO @mark: TEMPORARY! REMOVE THIS!
     while let Some(resp) = work_stream.next().await {
         info!("Received work request: {:?}", resp);
         if let Ok(resp) = resp {

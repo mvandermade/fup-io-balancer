@@ -9,6 +9,7 @@ use crate::dispatcher::WorkId;
 use ::futures::StreamExt;
 use ::log::debug;
 use ::log::info;
+use ::log::trace;
 use ::log::warn;
 use ::std::pin::Pin;
 use ::std::sync::Arc;
@@ -48,7 +49,7 @@ impl BalancerSvc for BalancerRpc {
             while let Some(req) = request_stream.next().await {
                 match req {
                     Ok(ack) => {
-                        debug!("Got ack for work request {}", ack.task_id);
+                        trace!("Got ack for work request {}", ack.task_id);
                         let task_id = WorkId { worker_id, task_id: ack.task_id };
                         if ack.error.is_empty() {
                             dispatcher_clone.complete_work(task_id).await;
