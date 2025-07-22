@@ -1,12 +1,11 @@
-use crate::dispatcher::Dispatcher;
 use crate::dispatcher::AssignResult;
+use crate::dispatcher::Dispatcher;
 use crate::postzegel::PostzegelEvent;
 use ::crossbeam_channel::Receiver;
 use ::log::debug;
 use ::log::info;
 use ::std::collections::VecDeque;
 use ::std::sync::Arc;
-use ::tonic::async_trait;
 
 #[derive(Debug)]
 pub struct Balancer {

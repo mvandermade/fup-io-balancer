@@ -1,5 +1,5 @@
-use std::collections::{HashMap, VecDeque};
-use dashmap::DashMap;
+use ::dashmap::DashMap;
+use ::std::collections::VecDeque;
 
 pub type WorkerId = u32;
 

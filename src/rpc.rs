@@ -1,24 +1,18 @@
-pub use self::proto::WorkAcknowledgement;
-pub use self::proto::WorkAssignment;
 pub use self::proto::balancer_svc_server::BalancerSvc;
 pub use self::proto::balancer_svc_server::BalancerSvcServer;
+pub use self::proto::WorkAcknowledgement;
+pub use self::proto::WorkAssignment;
 
 use crate::dispatcher::Dispatcher;
 use crate::dispatcher::FailReason;
 use crate::dispatcher::WorkId;
-use ::dashmap::DashMap;
 use ::futures::StreamExt;
 use ::log::debug;
-use ::log::error;
 use ::log::info;
-use log::warn;
+use ::log::warn;
 use ::std::pin::Pin;
-use ::std::sync::atomic;
-use ::std::sync::atomic::AtomicU32;
-use ::std::sync::atomic::AtomicU64;
 use ::std::sync::Arc;
 use ::tokio::sync::mpsc::channel;
-use ::tokio::task;
 use ::tonic::codegen::tokio_stream::wrappers::ReceiverStream;
 
 mod proto {
@@ -55,7 +49,7 @@ impl BalancerSvc for BalancerRpc {
                 match req {
                     Ok(ack) => {
                         debug!("Got ack for work request {}", ack.task_id);
-                        let task_id = WorkId { worker_id: worker_id, task_id: ack.task_id };
+                        let task_id = WorkId { worker_id, task_id: ack.task_id };
                         if ack.error.is_empty() {
                             dispatcher_clone.complete_work(task_id);
                         } else {

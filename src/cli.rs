@@ -1,5 +1,5 @@
-use std::net::SocketAddr;
 use ::clap::Parser;
+use ::std::net::SocketAddr;
 
 #[derive(Parser, Debug)]
 #[command(
@@ -19,7 +19,7 @@ pub struct CliArgs {
 
 #[test]
 fn test_cli_args() {
-    CliArgs::try_parse_from(&["cmd", "-v"]).unwrap();
-    CliArgs::try_parse_from(&["cmd", "-q"]).unwrap();
-    CliArgs::try_parse_from(&["cmd", "-b", "127.0.0.1:8080"]).unwrap();
+    CliArgs::try_parse_from(["cmd", "-v"]).unwrap();
+    CliArgs::try_parse_from(["cmd", "-q"]).unwrap();
+    CliArgs::try_parse_from(["cmd", "-b", "127.0.0.1:8080"]).unwrap();
 }

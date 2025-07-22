@@ -1,6 +1,6 @@
-use log::debug;
-use log::trace;
-use std::fmt;
+use ::log::debug;
+use ::log::trace;
+use ::std::fmt;
 
 #[derive(Debug)]
 pub struct PostzegelEvent {
@@ -36,15 +36,15 @@ impl fmt::Display for PostzegelEvent {
 const _: () = assert!(size_of::<PostzegelEvent>() < 10);
 
 fn is_valid_code_byte(c: u8) -> bool {
-    if c >= b'a' && c <= b'z' {
+    if c.is_ascii_lowercase() {
         trace!("valid lowercase letter: {c}");
         return true;
     }
-    if c >= b'A' && c <= b'Z' {
+    if c.is_ascii_uppercase() {
         trace!("valid uppercase letter: {c}");
         return true;
     }
-    if c >= b'0' && c <= b'9' {
+    if c.is_ascii_digit() {
         trace!("valid digit: {c}");
         return true;
     }

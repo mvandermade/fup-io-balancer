@@ -1,30 +1,21 @@
-
 use self::proto::balancer_svc_client::BalancerSvcClient;
 use self::proto::balancer_svc_server::BalancerSvc;
-use self::proto::balancer_svc_server::BalancerSvcServer;
 use self::proto::WorkAcknowledgement;
-use self::proto::WorkAssignment;
 
 use ::clap::Parser;
 use ::env_logger;
 use ::log::debug;
 use ::log::info;
-use std::env::args;
 use ::std::panic;
-use ::std::path::PathBuf;
-use ::std::process::exit;
 use ::std::thread;
-use std::time;
-use ::tonic::transport::Server;
+use ::std::time;
 
-use futures::StreamExt;
-use log::warn;
-use tokio::io::AsyncWriteExt;
-use tokio::sync::mpsc::channel;
-use tonic::codegen::tokio_stream::wrappers::ReceiverStream;
-use tonic::transport::{Channel, Error, Uri};
-use ::tonic::Response;
-use ::tonic::Status;
+use ::futures::StreamExt;
+use ::log::warn;
+use ::tokio::sync::mpsc::channel;
+use ::tonic::codegen::tokio_stream::wrappers::ReceiverStream;
+use ::tonic::transport::Channel;
+use ::tonic::transport::Uri;
 
 mod proto {
     #![allow(non_camel_case_types)]
@@ -50,7 +41,7 @@ pub struct ClientArgs {
 
 #[test]
 fn test_cli_args() {
-    ClientArgs::try_parse_from(&["client", "-a", "http://localhost:8080"]).unwrap();
+    ClientArgs::try_parse_from(["client", "-a", "http://localhost:8080"]).unwrap();
 }
 
 #[tokio::main]

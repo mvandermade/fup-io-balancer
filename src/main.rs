@@ -1,25 +1,20 @@
-
 use crate::balancer::Balancer;
 use crate::cli::CliArgs;
+use crate::dispatcher::Dispatcher;
 use crate::postzegel::PostzegelEvent;
-use crate::rpc::BalancerSvcServer;
 use crate::rpc::BalancerRpc;
+use crate::rpc::BalancerSvcServer;
 use crate::scanner::MockScanner;
-use crate::scanner::RealScanner;
-use crate::scanner::Scanner;
 use ::clap::Parser;
 use ::env_logger;
-use ::log::debug;
+use ::futures::executor::block_on;
 use ::log::info;
 use ::std::net::SocketAddr;
 use ::std::panic;
-use ::std::path::PathBuf;
 use ::std::process::exit;
+use ::std::sync::Arc;
 use ::std::thread;
-use std::sync::Arc;
 use ::tonic::transport::Server;
-use futures::executor::block_on;
-use crate::dispatcher::Dispatcher;
 
 mod dispatcher;
 mod rpc;

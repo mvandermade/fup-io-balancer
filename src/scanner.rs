@@ -1,4 +1,3 @@
-
 use crate::postzegel::PostzegelEvent;
 use ::crossbeam_channel::Sender;
 use ::log::debug;
