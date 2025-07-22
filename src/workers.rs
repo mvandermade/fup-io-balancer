@@ -29,7 +29,11 @@ impl <T: Clone> Workers<T> {
 
     pub fn mark_ready(&mut self, worker: WorkerId) {
         let existing = self.busy.remove(&worker);
-        assert!(existing.is_some(), "try to mark a worker as ready that is not busy");
+        if let Some(worker_data) = existing {
+            self.available.push_back(worker_data);
+        } else {
+            panic!("Try to mark a worker as ready that is not busy");
+        }
     }
 
     pub fn find_available(&mut self) -> Option<(WorkerId, T)> {

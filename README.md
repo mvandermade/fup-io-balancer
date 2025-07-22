@@ -23,7 +23,7 @@
 * If proto seems out of sync, do `cargo clean` and do 'cargo refresh' in RustRover if applicable.
 
 # Todo
-- "h2 protocol error: error reading a body from connection"
+- make client disconnect gracefully
 - drain backlog
 - handle ack timeouts responses
 - stats

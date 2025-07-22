@@ -58,7 +58,7 @@ impl BalancerSvc for BalancerRpc {
                         }
                     }
                     Err(err) => {
-                        warn!("Could not read message from worker {worker_id}, will be unregistered ({err})");
+                        warn!("Could not read message from worker {worker_id}, will be unregistered ({err}) (this often just means the client disconnected)");
                         dispatcher_clone.remove_worker(worker_id).await;
                         break;
                     }
