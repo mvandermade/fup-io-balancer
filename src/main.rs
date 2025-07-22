@@ -15,6 +15,7 @@ use ::std::process::exit;
 use ::std::sync::Arc;
 use ::std::thread;
 use ::tonic::transport::Server;
+use crate::global::ChannelKey;
 use crate::util::channel;
 
 mod dispatcher;
@@ -26,6 +27,7 @@ mod workers;
 mod cli;
 mod demos;
 mod util;
+mod global;
 
 #[tokio::main]
 async fn main() {
@@ -57,7 +59,7 @@ async fn main() {
 
 async fn run(addr: SocketAddr) {
     info!("Let's start some scanners!");
-    let (snd, rcv) = channel::<PostzegelEvent>(1024, "scanners");
+    let (snd, rcv) = channel::<PostzegelEvent>(1024, ChannelKey::Scanner);
 
     //TODO @mark: use scoped threads, if we figure out how to add a thread name to those
 
