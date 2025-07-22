@@ -20,7 +20,7 @@ impl <T: Debug> Workers<T> {
         }
     }
 
-    pub fn add_new(&mut self, worker: WorkerId, data: T) {
+    pub fn add_new(&mut self, worker: WorkerId, data: Sink<T>) {
         assert!(!self.busy.contains_key(&worker));
         self.available.push_back((worker, data));
     }
@@ -38,11 +38,14 @@ impl <T: Debug> Workers<T> {
         }
     }
 
-    pub fn find_available(&mut self) -> Option<(WorkerId, T)> {
+    pub fn find_available(&mut self) -> Option<(WorkerId, Sink<T>)> {
         let maybe_worker_data = self.available.pop_front();
-        if let Some((worker, data)) = maybe_worker_data {
-            self.busy.insert(worker, data.clone());
-            return Some((worker, data))
+        if let Some((worker_id, data)) = maybe_worker_data {
+            let existing = self.busy.insert(worker_id, data.fork());
+            if let Some(_) = existing {
+                panic!("Worker {} was already busy", worker_id);
+            }
+            return Some((worker_id, data))
         }
         None
     }

@@ -1,19 +1,21 @@
 use crate::global::ChannelKey;
 use ::log::info;
 use ::std::fmt::Debug;
+use ::std::mem;
 use ::tokio::sync::mpsc;
 
 #[derive(Debug)]
 pub struct Source<T: Debug> {
     key: ChannelKey,
-    channel: mpsc::Receiver<T>,
+    // Only swapped for None when exposed
+    channel: Option<mpsc::Receiver<T>>,
 }
 
 impl<T: Debug> Source<T> {
-    pub fn expose_receiver(self) -> mpsc::Receiver<T> {
-        let Source { key: _, channel } = self;
-        channel
-        //TODO @mark: does this prevent drop?
+    pub fn expose_receiver(mut self) -> mpsc::Receiver<T> {
+        let mut channel = None;
+        mem::swap(&mut self.channel, &mut channel);
+        channel.expect("Channel receiver already exposed")
     }
 }
 
@@ -27,7 +29,7 @@ pub fn channel<T: Debug>(size: usize, key: ChannelKey) -> (Sink<T>, Source<T>) {
     let (sender, receiver) = mpsc::channel(size);
     (
         Sink { key, channel: sender, },
-        Source { key, channel: receiver, },
+        Source { key, channel: Some(receiver), },
     )
 }
 
@@ -39,7 +41,10 @@ impl <T: Debug> Sink<T> {
 
 impl <T: Debug> Source<T> {
     pub async fn receive(&mut self) -> Option<T> {
-        self.channel.recv().await.map(|maybe| maybe)
+        match self.channel.as_mut() {
+            Some(chan) => chan.recv().await,
+            None => panic!("Channel receiver exposed"),
+        }
     }
 }
 
@@ -54,7 +59,9 @@ impl <T: Debug> Sink<T> {
 
 impl<T: Debug> Drop for Source<T> {
     fn drop(&mut self) {
-        info!("Closing channel source: {}", self.key);
+        if let Some(_) = self.channel.take() {
+            info!("Closing channel source: {}", self.key);
+        }
     }
 }
 
