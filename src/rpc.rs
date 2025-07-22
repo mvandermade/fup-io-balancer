@@ -6,7 +6,7 @@ pub use self::proto::WorkAssignment;
 use crate::dispatcher::Dispatcher;
 use crate::dispatcher::FailReason;
 use crate::dispatcher::WorkId;
-use crate::util::channel;
+use crate::channel::channel;
 use ::futures::StreamExt;
 use ::log::debug;
 use ::log::info;

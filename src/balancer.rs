@@ -1,7 +1,7 @@
 use crate::dispatcher::AssignResult;
 use crate::dispatcher::Dispatcher;
 use crate::postzegel::PostzegelEvent;
-use crate::util::Source;
+use crate::channel::Source;
 use ::log::debug;
 use ::log::info;
 use ::log::warn;
@@ -29,7 +29,7 @@ impl Balancer {
 }
 
 impl Balancer {
-    pub async fn run(&mut self) -> ! {
+    pub async fn run(mut self) -> ! {
         info!("Going to wait for postzegel events");
         while let Some(event) = self.source.receive().await {
             debug!("Got a postzegel event {}", event);

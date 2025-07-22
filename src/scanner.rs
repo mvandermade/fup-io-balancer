@@ -1,9 +1,9 @@
 use crate::postzegel::PostzegelEvent;
-use crate::util::Sink;
+use crate::channel::Sink;
 use ::log::debug;
 use ::std::fmt::Debug;
 use ::std::path::PathBuf;
-use tokio::time;
+use ::tokio::time;
 
 #[derive(Debug)]
 pub enum Scanner {
@@ -13,7 +13,7 @@ pub enum Scanner {
 }
 
 impl Scanner {
-    pub async fn run(&self) -> ! {
+    pub async fn run(self) -> ! {
         match self {
             Scanner::Real(_) => unimplemented!(),
             Scanner::Mock(scanner) => scanner.run().await,
@@ -46,7 +46,7 @@ impl MockScanner {
             self.sink.send(PostzegelEvent::new([(b'0' + (self.name % 10) as u8), b'0', b'0', b'0', b'0', b'0', b'x',
                 (b'0' + ((seq / 10) % 10) as u8), (b'0' + (seq % 10) as u8)]))
                 .await.expect("failed to send event");
-            time::sleep(std::time::Duration::from_secs(4));
+            time::sleep(time::Duration::from_secs(4)).await;
             seq += 1;
         }
     }

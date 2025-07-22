@@ -1,4 +1,4 @@
-use crate::util::Sink;
+use crate::channel::Sink;
 use ::dashmap::DashMap;
 use ::std::collections::VecDeque;
 use ::std::fmt::Debug;

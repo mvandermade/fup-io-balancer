@@ -6,7 +6,7 @@ use crate::postzegel::PostzegelEvent;
 use crate::rpc::BalancerRpc;
 use crate::rpc::BalancerSvcServer;
 use crate::scanner::MockScanner;
-use crate::util::channel;
+use crate::channel::channel;
 use ::clap::Parser;
 use ::env_logger;
 use ::log::info;
@@ -25,7 +25,7 @@ mod postzegel;
 mod workers;
 mod cli;
 mod demos;
-mod util;
+mod channel;
 mod global;
 
 #[tokio::main]

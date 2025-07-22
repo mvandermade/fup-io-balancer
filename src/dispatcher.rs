@@ -1,5 +1,5 @@
 use crate::rpc::WorkAssignment;
-use crate::util::Sink;
+use crate::channel::Sink;
 use crate::workers::WorkerId;
 use crate::workers::Workers;
 use ::dashmap::DashMap;
@@ -25,7 +25,7 @@ pub struct WorkId {
 pub struct Dispatcher {
     top_worker_id: AtomicU32,
     top_task_id: AtomicU64,
-    workers: Arc<Mutex<Workers<Sink<WorkAssignment>>>>,
+    workers: Arc<Mutex<Workers<WorkAssignment>>>,
     in_flight: DashMap<WorkId, ()>,
 }
 
