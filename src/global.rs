@@ -3,6 +3,7 @@ use std::fmt;
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum ChannelKey {
     Scanner,
+    Assignments,
 }
 
 impl fmt::Display for ChannelKey {

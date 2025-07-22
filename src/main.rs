@@ -1,13 +1,14 @@
 use crate::balancer::Balancer;
 use crate::cli::CliArgs;
 use crate::dispatcher::Dispatcher;
+use crate::global::ChannelKey;
 use crate::postzegel::PostzegelEvent;
 use crate::rpc::BalancerRpc;
 use crate::rpc::BalancerSvcServer;
 use crate::scanner::MockScanner;
+use crate::util::channel;
 use ::clap::Parser;
 use ::env_logger;
-use ::futures::executor::block_on;
 use ::log::info;
 use ::std::net::SocketAddr;
 use ::std::panic;
@@ -15,8 +16,6 @@ use ::std::process::exit;
 use ::std::sync::Arc;
 use ::std::thread;
 use ::tonic::transport::Server;
-use crate::global::ChannelKey;
-use crate::util::channel;
 
 mod dispatcher;
 mod rpc;
@@ -67,17 +66,13 @@ async fn run(addr: SocketAddr) {
     for nr in 1 ..= 3 {
         //TODO @mark: make a real scanner?
         let snd_copy = snd.fork();
-        let scanner_worker = thread::Builder::new().name(format!("scanner{nr}"))
-            .spawn(move || MockScanner::new(nr, snd_copy).run())
-            .expect("Failed to spawn scanner thread");
+        let scanner_worker = tokio::spawn(MockScanner::new(nr, snd_copy).run());
         workers.push(scanner_worker);
     }
 
     let dispatcher = Arc::new(Dispatcher::new());
     let dispatcher_clone = dispatcher.clone();
-    let balancer_worker = thread::Builder::new().name("balancer".to_string())
-        .spawn(move || block_on(Balancer::new(rcv, dispatcher_clone).run()))
-        .expect("Failed to spawn scanner thread");
+    let balancer_worker = tokio::spawn(Balancer::new(rcv, dispatcher_clone).run());
     workers.push(balancer_worker);
 
     info!("Going to listen on {}", addr);
@@ -86,8 +81,5 @@ async fn run(addr: SocketAddr) {
         .serve(addr)
         .await.expect("Could not start server");
 
-    info!("Started {} threads", workers.len());
-    for worker in workers {
-        worker.join().expect("Failed to join thread");
-    }
+    info!("Started {} tasks", workers.len());
 }

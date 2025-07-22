@@ -6,6 +6,7 @@ pub use self::proto::WorkAssignment;
 use crate::dispatcher::Dispatcher;
 use crate::dispatcher::FailReason;
 use crate::dispatcher::WorkId;
+use crate::util::channel;
 use ::futures::StreamExt;
 use ::log::debug;
 use ::log::info;
@@ -13,8 +14,8 @@ use ::log::trace;
 use ::log::warn;
 use ::std::pin::Pin;
 use ::std::sync::Arc;
-use ::tokio::sync::mpsc::channel;
 use ::tonic::codegen::tokio_stream::wrappers::ReceiverStream;
+use crate::global::ChannelKey;
 
 mod proto {
     #![allow(non_camel_case_types)]
@@ -38,7 +39,7 @@ impl BalancerSvc for BalancerRpc {
     type workStream = Pin<Box<dyn futures::Stream<Item=Result<WorkAssignment, tonic::Status>> + Send + 'static>>;
 
     async fn work(&self, request: tonic::Request<tonic::Streaming<WorkAcknowledgement>>) -> Result<tonic::Response<Self::workStream>, tonic::Status> {
-        let (task_sender, task_receiver) = channel::<WorkAssignment>(1);
+        let (task_sender, task_receiver) = channel::<WorkAssignment>(1, ChannelKey::Assignments);
         let worker_id = self.dispatcher.new_worker(task_sender).await;
 
         let dispatcher_clone = self.dispatcher.clone();
@@ -68,7 +69,7 @@ impl BalancerSvc for BalancerRpc {
         });
 
         debug!("Starting work rpc task sending stream for worker {}", worker_id);
-        let outbound_stream = ReceiverStream::new(task_receiver);
+        let outbound_stream = ReceiverStream::new(task_receiver.expose_receiver());
         Ok(tonic::Response::new(Box::pin(outbound_stream.map(Ok))))
     }
 

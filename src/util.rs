@@ -9,6 +9,14 @@ pub struct Source<T: Debug> {
     channel: mpsc::Receiver<T>,
 }
 
+impl<T: Debug> Source<T> {
+    pub fn expose_receiver(self) -> mpsc::Receiver<T> {
+        let Source { key: _, channel } = self;
+        channel
+        //TODO @mark: does this prevent drop?
+    }
+}
+
 #[derive(Debug)]
 pub struct Sink<T: Debug> {
     key: ChannelKey,
@@ -46,6 +54,12 @@ impl <T: Debug> Sink<T> {
 
 impl<T: Debug> Drop for Source<T> {
     fn drop(&mut self) {
-        info!("Closing channel {:?}", self.key);
+        info!("Closing channel source: {}", self.key);
+    }
+}
+
+impl<T: Debug> Drop for Sink<T> {
+    fn drop(&mut self) {
+        info!("Closing one of channel sinks: {}", self.key);
     }
 }
