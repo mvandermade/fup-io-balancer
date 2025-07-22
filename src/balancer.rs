@@ -30,9 +30,9 @@ impl Balancer {
                     debug!("Got a postzegel event {}", event);
                     let assignment = self.dispatcher.try_assign(event.code_str()).await;
                     if let AssignResult::Assigned(work_id) = assignment {
-                        debug!("Event {} assigned to worker {}", work_id.worker_id, event);
+                        debug!("Event {} ({event}) assigned to worker {}", work_id.task_id, work_id.worker_id);
                     } else {
-                        debug!("Event {} not assigned, send to backlog", event);
+                        debug!("Event ({event}) not assigned, send to backlog");
                         self.backlog.push_back(event)
                     }
                 },

@@ -8,13 +8,14 @@ use ::log::info;
 use ::std::panic;
 use ::std::thread;
 use ::std::time;
-
+use std::time::Duration;
 use ::futures::StreamExt;
 use ::log::warn;
 use ::tokio::sync::mpsc::channel;
 use ::tonic::codegen::tokio_stream::wrappers::ReceiverStream;
 use ::tonic::transport::Channel;
 use ::tonic::transport::Uri;
+use tokio::time::sleep;
 
 mod proto {
     #![allow(non_camel_case_types)]
@@ -67,18 +68,26 @@ async fn run(args: &ClientArgs) {
     let mut ack_sent = 0;
     while let Some(resp) = work_stream.next().await {
         info!("Received work request: {:?}", resp);
-        if let Ok(resp) = resp {
-            let max_ack = args.max_ack.unwrap_or(u32::MAX);
-            if args.max_ack.is_none() || ack_sent < max_ack {
-                ack_sent += 1;
-                debug!("Acknowledging task {:?} (#{})", resp.task_id, ack_sent);
-                task_sender.send(WorkAcknowledgement { task_id: resp.task_id, error: "".to_string() }).await.unwrap();
-            } else {
-                debug!("Not acknowledging task {:?} because at most {} tasks can be acknowledged (cli config)", resp.task_id, max_ack);
+        match resp {
+            Ok(assignment) => {
+                let max_ack = args.max_ack.unwrap_or(u32::MAX);
+                if args.max_ack.is_none() || ack_sent < max_ack {
+                    ack_sent += 1;
+                    debug!("Acknowledging task {:?} (#{})", assignment.task_id, ack_sent);
+                    task_sender.send(WorkAcknowledgement { task_id: assignment.task_id, error: "".to_string() }).await.unwrap();
+                } else {
+                    debug!("Not acknowledging task {:?} because at most {} tasks can be acknowledged (cli config)", assignment.task_id, max_ack);
+                }
+            }
+            Err(err) => {
+                warn!("Error while receiving work: {:?}", err);
+                break;
             }
         }
     }
     info!("End of response stream (server might have stopped, or kicked us)");
+    sleep(Duration::from_millis(200)).await;
+    debug!("Stopping client");
 }
 
 async fn connect_with_retry(addr: &Uri, max_connection_retry: u32) -> BalancerSvcClient<Channel> {
