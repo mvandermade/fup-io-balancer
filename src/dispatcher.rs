@@ -31,7 +31,7 @@ pub struct Dispatcher {
 #[derive(Debug)]
 pub enum FailReason {
     Disconnect,
-    Timeout,
+    Timeout,  //TODO @mark: 
     Error(String),
 }
 

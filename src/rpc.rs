@@ -51,9 +51,9 @@ impl BalancerSvc for BalancerRpc {
                         debug!("Got ack for work request {}", ack.task_id);
                         let task_id = WorkId { worker_id, task_id: ack.task_id };
                         if ack.error.is_empty() {
-                            dispatcher_clone.complete_work(task_id);
+                            dispatcher_clone.complete_work(task_id).await;
                         } else {
-                            dispatcher_clone.fail_work(task_id, FailReason::Error(ack.error));
+                            dispatcher_clone.fail_work(task_id, FailReason::Error(ack.error)).await;
                         }
                     }
                     Err(err) => {

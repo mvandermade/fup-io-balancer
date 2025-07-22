@@ -1,3 +1,4 @@
+#![allow(unused)]  //TODO
 
 #[derive(Debug, Clone, Copy)]
 struct MyNr { nr: i32 }
@@ -13,5 +14,5 @@ mod tests {
         number_eater(nr);  // works because of Copy
     }
 
-    fn number_eater(nr: MyNr) {}
+    fn number_eater(_: MyNr) {}
 }

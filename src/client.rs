@@ -1,5 +1,4 @@
 use self::proto::balancer_svc_client::BalancerSvcClient;
-use self::proto::balancer_svc_server::BalancerSvc;
 use self::proto::WorkAcknowledgement;
 
 use ::clap::Parser;
@@ -66,7 +65,7 @@ async fn run(args: &ClientArgs) {
         .await.expect("Could not send grpc request")
         .into_inner();
     let mut ack_sent = 0;
-    task_sender.send(WorkAcknowledgement { task_id: 0, error: "TEST".to_string() });  //TODO @mark: TEMPORARY! REMOVE THIS!
+    task_sender.send(WorkAcknowledgement { task_id: 0, error: "TEST".to_string() }).await.unwrap();  //TODO @mark: TEMPORARY! REMOVE THIS!
     while let Some(resp) = work_stream.next().await {
         info!("Received work request: {:?}", resp);
         if let Ok(resp) = resp {
@@ -74,7 +73,7 @@ async fn run(args: &ClientArgs) {
             if args.max_ack.is_none() || ack_sent < max_ack {
                 ack_sent += 1;
                 debug!("Acknowledging task {:?} (#{})", resp.task_id, ack_sent);
-                task_sender.send(WorkAcknowledgement { task_id: resp.task_id, error: "".to_string() });
+                task_sender.send(WorkAcknowledgement { task_id: resp.task_id, error: "".to_string() }).await.unwrap();
             } else {
                 debug!("Not acknowledging task {:?} because at most {} tasks can be acknowledged (cli config)", resp.task_id, max_ack);
             }

@@ -7,6 +7,7 @@ use ::std::thread::sleep;
 
 #[derive(Debug)]
 pub enum Scanner {
+    #[allow(dead_code)]  //TODO
     Real(RealScanner),
     Mock(MockScanner),
 }
@@ -14,13 +15,14 @@ pub enum Scanner {
 impl Scanner {
     pub fn run(&self) -> ! {
         match self {
-            Scanner::Real(scanner) => unimplemented!(),
+            Scanner::Real(_) => unimplemented!(),
             Scanner::Mock(scanner) => scanner.run(),
         }
     }
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]  //TODO
 pub struct RealScanner {
     pub address: PathBuf,
     pub sink: Sender<PostzegelEvent>,
