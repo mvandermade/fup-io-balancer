@@ -1,0 +1,14 @@
+<project>
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.example</groupId>
+    <artifactId>fup-io-balancer-protobuf</artifactId>
+    <version>1</version>
+
+    <distributionManagement>
+        <repository>
+            <id>github</id>
+            <name>GitHub Packages</name>
+            <url>https://maven.pkg.github.com/mvandermade/fup-io-balancer</url>
+        </repository>
+    </distributionManagement>
+</project>
