@@ -6,6 +6,9 @@ use ::log::debug;
 use ::log::info;
 use ::std::collections::VecDeque;
 use ::std::sync::Arc;
+use log::warn;
+
+const BACKLOG_SIZE: usize = 1024;
 
 #[derive(Debug)]
 pub struct Balancer {
@@ -17,7 +20,7 @@ pub struct Balancer {
 
 impl Balancer {
     pub fn new(source: Receiver<PostzegelEvent>, dispatcher: Arc<Dispatcher>) -> Self {
-        Balancer { source, dispatcher, backlog: VecDeque::with_capacity(1024), }
+        Balancer { source, dispatcher, backlog: VecDeque::with_capacity(BACKLOG_SIZE), }
     }
 }
 
@@ -33,7 +36,11 @@ impl Balancer {
                         debug!("Event {} ({event}) assigned to worker {}", work_id.task_id, work_id.worker_id);
                     } else {
                         debug!("Event ({event}) not assigned, send to backlog");
-                        self.backlog.push_back(event)
+                        if self.backlog.len() < BACKLOG_SIZE {
+                            self.backlog.push_back(event);
+                        } else {
+                            warn!("Backlog is full, rejecting event {event}");
+                        }
                     }
                 },
                 Err(_) => panic!("channel disconnected, cannot get more events"),
