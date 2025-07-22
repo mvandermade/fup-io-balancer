@@ -1,9 +1,8 @@
-#![allow(unused)]  //TODO @mark: TEMPORARY! REMOVE THIS!
 
 use crate::balancer::Balancer;
 use crate::cli::CliArgs;
 use crate::postzegel::PostzegelEvent;
-use crate::rpc::balancer_svc_server::BalancerSvcServer;
+use crate::rpc::BalancerSvcServer;
 use crate::rpc::BalancerRpc;
 use crate::scanner::MockScanner;
 use crate::scanner::RealScanner;

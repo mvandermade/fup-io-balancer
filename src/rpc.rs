@@ -1,11 +1,17 @@
-use crate::dispatcher::{Dispatcher, FailReason};
+pub use self::proto::WorkAcknowledgement;
+pub use self::proto::WorkAssignment;
+pub use self::proto::balancer_svc_server::BalancerSvc;
+pub use self::proto::balancer_svc_server::BalancerSvcServer;
+
+use crate::dispatcher::Dispatcher;
+use crate::dispatcher::FailReason;
 use crate::dispatcher::WorkId;
-use crate::rpc::balancer_svc_server::BalancerSvc;
 use ::dashmap::DashMap;
 use ::futures::StreamExt;
 use ::log::debug;
 use ::log::error;
 use ::log::info;
+use log::warn;
 use ::std::pin::Pin;
 use ::std::sync::atomic;
 use ::std::sync::atomic::AtomicU32;
@@ -14,11 +20,11 @@ use ::std::sync::Arc;
 use ::tokio::sync::mpsc::channel;
 use ::tokio::task;
 use ::tonic::codegen::tokio_stream::wrappers::ReceiverStream;
-use ::tonic::IntoRequest;
-use ::tonic::Status;
-use log::warn;
 
-tonic::include_proto!("balancerapi");
+mod proto {
+    #![allow(non_camel_case_types)]
+    tonic::include_proto!("balancerapi");
+}
 
 #[derive(Debug)]
 pub struct BalancerRpc {

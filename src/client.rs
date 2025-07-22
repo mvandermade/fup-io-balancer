@@ -1,4 +1,9 @@
-#![allow(unused)]  //TODO @mark: TEMPORARY! REMOVE THIS!
+
+use self::proto::balancer_svc_client::BalancerSvcClient;
+use self::proto::balancer_svc_server::BalancerSvc;
+use self::proto::balancer_svc_server::BalancerSvcServer;
+use self::proto::WorkAcknowledgement;
+use self::proto::WorkAssignment;
 
 use ::clap::Parser;
 use ::env_logger;
@@ -12,7 +17,6 @@ use ::std::thread;
 use std::time;
 use ::tonic::transport::Server;
 
-use crate::balancer_svc_client::BalancerSvcClient;
 use futures::StreamExt;
 use log::warn;
 use tokio::io::AsyncWriteExt;
@@ -22,7 +26,10 @@ use tonic::transport::{Channel, Error, Uri};
 use ::tonic::Response;
 use ::tonic::Status;
 
-tonic::include_proto!("balancerapi");
+mod proto {
+    #![allow(non_camel_case_types)]
+    tonic::include_proto!("balancerapi");
+}
 
 #[derive(Parser, Debug)]
 #[command(
@@ -32,8 +39,9 @@ pub struct ClientArgs {
     /// The ip and port to connect to
     #[arg(short = 'a', long, default_value = "http://127.0.0.1:7331")]
     pub addr: Uri,
-    /// How many times to retry the initial connection (does not reconnect if disconnected later)
-    #[arg(long, default_value = "1000")]
+    /// How many times to retry the initial connection after the first
+    /// (does not reconnect if disconnected later)
+    #[arg(long, default_value = "999")]
     pub max_connection_retry: u32,
     /// Debug option to stop sending ack after some iterations
     #[arg(long)]

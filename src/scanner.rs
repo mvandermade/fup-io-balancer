@@ -1,4 +1,3 @@
-#![allow(unused)]  //TODO @mark: TEMPORARY! REMOVE THIS!
 
 use crate::postzegel::PostzegelEvent;
 use ::crossbeam_channel::Sender;
@@ -46,7 +45,7 @@ impl MockScanner {
             self.sink.send(PostzegelEvent::new([(b'0' + (self.name % 10) as u8), b'0', b'0', b'0', b'0', b'0', b'x',
                 (b'0' + ((seq / 10) % 10) as u8), (b'0' + (seq % 10) as u8)]))
                 .expect("failed to send event");
-            sleep(std::time::Duration::from_secs(10));
+            sleep(std::time::Duration::from_secs(4));
             seq += 1;
         }
     }

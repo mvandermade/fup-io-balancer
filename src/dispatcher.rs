@@ -1,4 +1,5 @@
-use crate::rpc::balancer_svc_server::BalancerSvc;
+use crate::rpc::BalancerSvc;
+use crate::rpc::WorkAssignment;
 use crate::workers::WorkerId;
 use crate::workers::Workers;
 use ::dashmap::DashMap;
@@ -6,18 +7,17 @@ use ::futures::StreamExt;
 use ::log::debug;
 use ::log::error;
 use ::log::info;
+use log::warn;
 use ::std::collections::VecDeque;
+use std::fmt;
 use ::std::pin::Pin;
 use ::std::sync::atomic;
 use ::std::sync::atomic::AtomicU32;
 use ::std::sync::atomic::AtomicU64;
 use ::std::sync::Arc;
-use std::fmt;
 use ::tokio::sync::mpsc::Sender;
 use ::tokio::sync::Mutex;
 use ::tonic::IntoRequest;
-use log::warn;
-use crate::rpc::WorkAssignment;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct WorkId {
