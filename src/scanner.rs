@@ -1,9 +1,9 @@
 use crate::postzegel::PostzegelEvent;
-use ::crossbeam_channel::Sender;
 use ::log::debug;
 use ::std::fmt::Debug;
 use ::std::path::PathBuf;
 use ::std::thread::sleep;
+use crate::util::Sink;
 
 #[derive(Debug)]
 pub enum Scanner {
@@ -25,17 +25,17 @@ impl Scanner {
 #[allow(dead_code)]  //TODO
 pub struct RealScanner {
     pub address: PathBuf,
-    pub sink: Sender<PostzegelEvent>,
+    pub sink: Sink<PostzegelEvent>,
 }
 
 #[derive(Debug)]
 pub struct MockScanner {
     pub name: u32,
-    pub sink: Sender<PostzegelEvent>,
+    pub sink: Sink<PostzegelEvent>,
 }
 
 impl MockScanner {
-    pub fn new(name: u32, sink: Sender<PostzegelEvent>) -> Scanner {
+    pub fn new(name: u32, sink: Sink<PostzegelEvent>) -> Scanner {
         Scanner::Mock(MockScanner { name, sink })
     }
 

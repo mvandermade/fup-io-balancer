@@ -15,6 +15,7 @@ use ::std::process::exit;
 use ::std::sync::Arc;
 use ::std::thread;
 use ::tonic::transport::Server;
+use crate::util::channel;
 
 mod dispatcher;
 mod rpc;
@@ -24,6 +25,7 @@ mod postzegel;
 mod workers;
 mod cli;
 mod demos;
+mod util;
 
 #[tokio::main]
 async fn main() {
@@ -55,14 +57,14 @@ async fn main() {
 
 async fn run(addr: SocketAddr) {
     info!("Let's start some scanners!");
-    let (snd, rcv) = crossbeam_channel::bounded::<PostzegelEvent>(1024);
+    let (snd, rcv) = channel::<PostzegelEvent>(1024, "scanners");
 
     //TODO @mark: use scoped threads, if we figure out how to add a thread name to those
 
     let mut workers = Vec::with_capacity(8);
     for nr in 1 ..= 3 {
         //TODO @mark: make a real scanner?
-        let snd_copy = snd.clone();
+        let snd_copy = snd.fork();
         let scanner_worker = thread::Builder::new().name(format!("scanner{nr}"))
             .spawn(move || MockScanner::new(nr, snd_copy).run())
             .expect("Failed to spawn scanner thread");

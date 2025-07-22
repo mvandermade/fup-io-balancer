@@ -1,16 +1,18 @@
+use crate::util::Sink;
 use ::dashmap::DashMap;
 use ::std::collections::VecDeque;
+use ::std::fmt::Debug;
 
 pub type WorkerId = u32;
 
 #[derive(Debug)]
-pub struct Workers<T> {
-    available: VecDeque<(WorkerId, T)>,
-    busy: DashMap<WorkerId, T>,
+pub struct Workers<T: Debug> {
+    available: VecDeque<(WorkerId, Sink<T>)>,
+    busy: DashMap<WorkerId, Sink<T>>,
     //TODO @mark: ^ use better dequeue
 }
 
-impl <T: Clone> Workers<T> {
+impl <T: Debug> Workers<T> {
     pub fn new() -> Workers<T> {
         Workers {
             available: VecDeque::with_capacity(1024),

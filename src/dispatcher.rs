@@ -1,4 +1,5 @@
 use crate::rpc::WorkAssignment;
+use crate::util::Sink;
 use crate::workers::WorkerId;
 use crate::workers::Workers;
 use ::dashmap::DashMap;
@@ -11,7 +12,6 @@ use ::std::sync::atomic;
 use ::std::sync::atomic::AtomicU32;
 use ::std::sync::atomic::AtomicU64;
 use ::std::sync::Arc;
-use ::tokio::sync::mpsc::Sender;
 use ::tokio::sync::Mutex;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -25,7 +25,7 @@ pub struct WorkId {
 pub struct Dispatcher {
     top_worker_id: AtomicU32,
     top_task_id: AtomicU64,
-    workers: Arc<Mutex<Workers<Sender<WorkAssignment>>>>,
+    workers: Arc<Mutex<Workers<Sink<WorkAssignment>>>>,
     in_flight: DashMap<WorkId, ()>,
 }
 
@@ -56,7 +56,7 @@ impl Dispatcher {
         }
     }
 
-    pub async fn new_worker(&self, task_sender: Sender<WorkAssignment>) -> WorkerId {
+    pub async fn new_worker(&self, task_sender: Sink<WorkAssignment>) -> WorkerId {
         let worker_id = self.top_worker_id.fetch_add(1, atomic::Ordering::Relaxed);
         self.workers.lock().await.add_new(worker_id, task_sender);
         worker_id

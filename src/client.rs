@@ -3,19 +3,19 @@ use self::proto::WorkAcknowledgement;
 
 use ::clap::Parser;
 use ::env_logger;
+use ::futures::StreamExt;
 use ::log::debug;
 use ::log::info;
+use ::log::warn;
 use ::std::panic;
 use ::std::thread;
 use ::std::time;
-use std::time::Duration;
-use ::futures::StreamExt;
-use ::log::warn;
+use ::std::time::Duration;
 use ::tokio::sync::mpsc::channel;
+use ::tokio::time::sleep;
 use ::tonic::codegen::tokio_stream::wrappers::ReceiverStream;
 use ::tonic::transport::Channel;
 use ::tonic::transport::Uri;
-use tokio::time::sleep;
 
 mod proto {
     #![allow(non_camel_case_types)]

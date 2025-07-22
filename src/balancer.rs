@@ -1,25 +1,25 @@
 use crate::dispatcher::AssignResult;
 use crate::dispatcher::Dispatcher;
 use crate::postzegel::PostzegelEvent;
-use ::crossbeam_channel::Receiver;
+use crate::util::Source;
 use ::log::debug;
 use ::log::info;
+use ::log::warn;
 use ::std::collections::VecDeque;
 use ::std::sync::Arc;
-use log::warn;
 
 const BACKLOG_SIZE: usize = 1024;
 
 #[derive(Debug)]
 pub struct Balancer {
-    pub source: Receiver<PostzegelEvent>,
+    pub source: Source<PostzegelEvent>,
     dispatcher: Arc<Dispatcher>,
     backlog: VecDeque<PostzegelEvent>,
     //TODO @mark: handle backlog items
 }
 
 impl Balancer {
-    pub fn new(source: Receiver<PostzegelEvent>, dispatcher: Arc<Dispatcher>) -> Self {
+    pub fn new(source: Source<PostzegelEvent>, dispatcher: Arc<Dispatcher>) -> Self {
         Balancer { source, dispatcher, backlog: VecDeque::with_capacity(BACKLOG_SIZE), }
     }
 }
