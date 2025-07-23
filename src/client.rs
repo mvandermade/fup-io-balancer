@@ -11,6 +11,7 @@ use ::std::panic;
 use ::std::thread;
 use ::std::time;
 use ::std::time::Duration;
+use std::cmp::max;
 use ::tokio::sync::mpsc::channel;
 use ::tokio::time::sleep;
 use ::tonic::codegen::tokio_stream::wrappers::ReceiverStream;
@@ -34,6 +35,9 @@ pub struct ClientArgs {
     /// (does not reconnect if disconnected later)
     #[arg(long, default_value = "999")]
     pub max_connection_retry: u32,
+    /// Fail every nth task, for testing
+    #[arg(long)]
+    pub fail_every_nth: Option<u32>,
     /// Debug option to stop sending ack after some iterations
     #[arg(long)]
     pub max_ack: Option<u32>,
@@ -66,6 +70,7 @@ async fn run(args: &ClientArgs) {
         .await.expect("Could not send grpc request")
         .into_inner();
     let mut ack_sent = 0;
+    let fail_every_nth = max(1, args.fail_every_nth.unwrap_or(u32::MAX));
     while let Some(resp) = work_stream.next().await {
         info!("Received work request: {:?}", resp);
         match resp {
@@ -73,8 +78,13 @@ async fn run(args: &ClientArgs) {
                 let max_ack = args.max_ack.unwrap_or(u32::MAX);
                 if args.max_ack.is_none() || ack_sent < max_ack {
                     ack_sent += 1;
-                    debug!("Acknowledging task {:?} (#{})", assignment.task_id, ack_sent);
-                    task_sender.send(WorkAcknowledgement { task_id: assignment.task_id, error: "".to_string() }).await.unwrap();
+                    if ack_sent % fail_every_nth != 0 {
+                        debug!("Acknowledging task {:?} (#{})", assignment.task_id, ack_sent);
+                        task_sender.send(WorkAcknowledgement { task_id: assignment.task_id, error: "".to_string() }).await.unwrap();
+                    } else {
+                        debug!("Failing acknowledgement for task {:?} (#{})", assignment.task_id, ack_sent);
+                        task_sender.send(WorkAcknowledgement { task_id: assignment.task_id, error: format!("test failure {ack_sent}") }).await.unwrap();
+                    }
                 } else {
                     debug!("Not acknowledging task {:?} because at most {} tasks can be acknowledged (cli config)", assignment.task_id, max_ack);
                 }
