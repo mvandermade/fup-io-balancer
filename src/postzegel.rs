@@ -2,10 +2,12 @@ use ::log::debug;
 use ::log::trace;
 use ::std::fmt;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PostzegelEvent {
     code: [u8; 9],
 }
+
+
 
 impl PostzegelEvent {
     pub fn code_str(&self) -> String {
@@ -34,6 +36,7 @@ impl fmt::Display for PostzegelEvent {
 }
 
 const _: () = assert!(size_of::<PostzegelEvent>() < 10);
+// ^ if this gets too big, remove `clone` and use Arc or something
 
 fn is_valid_code_byte(c: u8) -> bool {
     if c.is_ascii_lowercase() {

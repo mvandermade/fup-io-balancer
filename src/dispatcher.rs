@@ -74,7 +74,7 @@ impl Dispatcher {
 
     pub async fn complete_work(&self, work_id: WorkId) {
         let ongoing_task = self.in_flight.remove(&work_id);
-        if ongoing_task.is_some() {
+        if let Some(_) = ongoing_task {
             debug!("Got ack for work request {} by worker {}", work_id.task_id, work_id.worker_id);
             self.workers.lock().await.mark_ready(work_id.worker_id);
         } else {
@@ -88,7 +88,8 @@ impl Dispatcher {
         let existing = self.in_flight.remove(&task_id);
         if let Some((_, failure_handler)) = existing {
             info!("Task {} for worker {} failed: {}", task_id.task_id, task_id.worker_id, reason);
-            failure_handler.fail_task(reason).await;
+            let q = self.workers.lock().await.mark_ready(task_id.worker_id);
+            failure_handler.fail_task(idempotency_id).await;
         } else {
             warn!("Task {} for worker {} marked as failed, but was not found: {}", task_id.task_id, task_id.worker_id, reason);
         }

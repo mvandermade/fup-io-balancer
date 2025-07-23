@@ -17,8 +17,8 @@ pub struct TaskFailureHandler {
 }
 
 impl TaskFailureHandler {
-    pub fn new(sink: Sink<(PostzegelEvent, Option<u64>)>) -> Self {
-        TaskFailureHandler { sink }
+    pub fn new(event: PostzegelEvent, sink: Sink<(PostzegelEvent, Option<u64>)>) -> Self {
+        TaskFailureHandler { event, sink }
     }
 }
 

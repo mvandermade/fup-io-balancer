@@ -40,7 +40,7 @@ impl Balancer {
         info!("Going to wait for postzegel events");
         while let Some(event) = self.source.receive().await {
             debug!("Got a postzegel event {}", event);
-            let handler = TaskFailureHandler::new(self.backlog_sink.fork());
+            let handler = TaskFailureHandler::new(event.clone(), self.backlog_sink.fork());
             let assignment = self.dispatcher.try_assign(event.code_str(), handler, idempotency_id).await;
             if let AssignResult::Assigned(work_id) = assignment {
                 debug!(
