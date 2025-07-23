@@ -1,4 +1,6 @@
 use crate::balancer::Balancer;
+use crate::channel::channel;
+use crate::channel::Fork;
 use crate::cli::CliArgs;
 use crate::dispatcher::Dispatcher;
 use crate::global::ChannelKey;
@@ -6,7 +8,6 @@ use crate::postzegel::PostzegelEvent;
 use crate::rpc::BalancerRpc;
 use crate::rpc::BalancerSvcServer;
 use crate::scanner::MockScanner;
-use crate::channel::channel;
 use ::clap::Parser;
 use ::env_logger;
 use ::log::info;

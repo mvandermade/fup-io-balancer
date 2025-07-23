@@ -57,8 +57,12 @@ impl <T: Debug> Source<T> {
     }
 }
 
-impl <T: Debug> Sink<T> {
-    pub fn fork(&self) -> Sink<T> {
+pub trait Fork {
+    fn fork(&self) -> Self;
+}
+
+impl <T: Debug> Fork for Sink<T> {
+    fn fork(&self) -> Sink<T> {
         Sink {
             key: self.key.clone(),
             channel: self.channel.clone(),

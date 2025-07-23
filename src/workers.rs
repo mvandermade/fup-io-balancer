@@ -1,18 +1,18 @@
-use crate::channel::Sink;
 use ::dashmap::DashMap;
 use ::std::collections::VecDeque;
 use ::std::fmt::Debug;
+use crate::channel::Fork;
 
 pub type WorkerId = u32;
 
 #[derive(Debug)]
-pub struct Workers<T: Debug> {
-    available: VecDeque<(WorkerId, Sink<T>)>,
-    busy: DashMap<WorkerId, Sink<T>>,
+pub struct Workers<T: Fork + Debug> {
+    available: VecDeque<(WorkerId, T)>,
+    busy: DashMap<WorkerId, T>,
     //TODO @mark: ^ use better dequeue
 }
 
-impl <T: Debug> Workers<T> {
+impl <T: Fork + Debug> Workers<T> {
     pub fn new() -> Workers<T> {
         Workers {
             available: VecDeque::with_capacity(1024),
@@ -20,7 +20,7 @@ impl <T: Debug> Workers<T> {
         }
     }
 
-    pub fn add_new(&mut self, worker: WorkerId, data: Sink<T>) {
+    pub fn add_new(&mut self, worker: WorkerId, data: T) {
         assert!(!self.busy.contains_key(&worker));
         self.available.push_back((worker, data));
     }
@@ -38,7 +38,7 @@ impl <T: Debug> Workers<T> {
         }
     }
 
-    pub fn find_available(&mut self) -> Option<(WorkerId, Sink<T>)> {
+    pub fn find_available(&mut self) -> Option<(WorkerId, T)> {
         let maybe_worker_data = self.available.pop_front();
         if let Some((worker_id, data)) = maybe_worker_data {
             let existing = self.busy.insert(worker_id, data.fork());

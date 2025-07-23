@@ -26,7 +26,7 @@ pub struct WorkId {
 pub struct Dispatcher {
     top_worker_id: AtomicU32,
     top_task_id: AtomicU64,
-    workers: Arc<Mutex<Workers<WorkAssignment>>>,
+    workers: Arc<Mutex<Workers<Sink<WorkAssignment>>>>,
     in_flight: DashMap<WorkId, TaskFailureHandler>,
 }
 

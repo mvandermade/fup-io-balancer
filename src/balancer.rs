@@ -1,4 +1,4 @@
-use crate::channel::channel;
+use crate::channel::{channel, Fork};
 use crate::channel::Sink;
 use crate::channel::Source;
 use crate::dispatcher::AssignResult;
