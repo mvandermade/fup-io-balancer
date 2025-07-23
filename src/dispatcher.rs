@@ -1,6 +1,8 @@
 use crate::channel::Sink;
 use crate::rpc::WorkAssignment;
-use crate::task_util::{FailReason, IdemId, TaskFailureHandler};
+use crate::task_util::IdemId;
+use crate::task_util::FailReason;
+use crate::task_util::TaskFailureHandler;
 use crate::workers::WorkerId;
 use crate::workers::Workers;
 use ::dashmap::DashMap;

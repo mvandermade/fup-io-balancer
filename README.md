@@ -23,8 +23,8 @@
 * If proto seems out of sync, do `cargo clean` and do 'cargo refresh' in RustRover if applicable.
 
 # Todo
+- result handler for rpc, let dispatcher call rpc
 - make client disconnect gracefully
-- drain backlog
 - track idempotency id to prevent repeats
 - handle ack timeouts responses
 - stats
