@@ -3,6 +3,7 @@ use ::log::info;
 use ::std::fmt::Debug;
 use ::std::mem;
 use ::tokio::sync::mpsc;
+use tokio::sync::mpsc::error::TrySendError;
 
 #[derive(Debug)]
 pub struct Source<T: Debug> {
@@ -36,6 +37,14 @@ pub fn channel<T: Debug>(size: usize, key: ChannelKey) -> (Sink<T>, Source<T>) {
 impl <T: Debug> Sink<T> {
     pub async fn send(&self, value: T) -> Result<(), String> {
         self.channel.send(value).await.map_err(|err| err.to_string())
+    }
+
+    pub fn try_send(&self, value: T) -> Result<(), (T, String)> {
+        match self.channel.try_send(value) {
+            Ok(_) => Ok(()),
+            Err(TrySendError::Closed(val)) => Err((val, "backlog closed!".to_owned())),
+            Err(TrySendError::Full(val)) => Err((val, "full".to_owned())),
+        }
     }
 }
 

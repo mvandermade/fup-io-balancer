@@ -1,4 +1,6 @@
-use crate::channel::{channel, Sink, Source};
+use crate::channel::channel;
+use crate::channel::Sink;
+use crate::channel::Source;
 use crate::dispatcher::AssignResult;
 use crate::dispatcher::Dispatcher;
 use crate::global::ChannelKey;
@@ -8,6 +10,7 @@ use ::log::debug;
 use ::log::info;
 use ::log::warn;
 use ::std::sync::Arc;
+use std::arch::x86_64::_mm256_castpd_ps;
 
 const BACKLOG_SIZE: usize = 1024;
 
@@ -15,19 +18,19 @@ const BACKLOG_SIZE: usize = 1024;
 pub struct Balancer {
     pub source: Source<PostzegelEvent>,
     dispatcher: Arc<Dispatcher>,
-    backlog_source: Sink<(PostzegelEvent, Option<u64>)>,
-    backlog_sink: Source<(PostzegelEvent, Option<u64>)>,
-    //TODO @mark: handle backlog items
+    backlog_sink: Sink<(PostzegelEvent, Option<u64>)>,
+    backlog_source: Source<(PostzegelEvent, Option<u64>)>,
+    // idempotency id, in case the backlog entry is a retry ^
 }
 
 impl Balancer {
     pub fn new(source: Source<PostzegelEvent>, dispatcher: Arc<Dispatcher>) -> Self {
-        let (backlog_source, backlog_sink) = channel(BACKLOG_SIZE, ChannelKey::BalancerBacklog);
+        let (backlog_sink, backlog_source) = channel(BACKLOG_SIZE, ChannelKey::BalancerBacklog);
         Balancer {
             source,
             dispatcher,
-            backlog_source,
             backlog_sink,
+            backlog_source,
         }
     }
 }
@@ -46,11 +49,10 @@ impl Balancer {
                 );
             } else {
                 debug!("Event ({event}) not assigned, send to backlog");
-                if self.backlog.len() < BACKLOG_SIZE {
-                    self.backlog.push_back(event);
-                } else {
-                    warn!("Backlog is full, rejecting event {event}");
-                }
+                if let Err(((event, _), err)) = self.backlog_sink.try_send((event, None)) {
+                    warn!("Backlog is full or closed, rejecting event {event} (err: {err})");
+                    //TODO @mark: metric
+                };
             }
         }
         //TODO @mark: drain queue here
