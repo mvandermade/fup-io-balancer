@@ -1,6 +1,6 @@
 use crate::channel::Sink;
 use crate::rpc::WorkAssignment;
-use crate::task_util::{FailReason, TaskFailureHandler};
+use crate::task_util::{FailReason, IdemId, TaskFailureHandler};
 use crate::workers::WorkerId;
 use crate::workers::Workers;
 use ::dashmap::DashMap;
@@ -27,7 +27,7 @@ pub struct Dispatcher {
     top_worker_id: AtomicU32,
     top_task_id: AtomicU64,
     workers: Arc<Mutex<Workers<Sink<WorkAssignment>>>>,
-    in_flight: DashMap<WorkId, TaskFailureHandler>,
+    in_flight: DashMap<WorkId, (IdemId, TaskFailureHandler)>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -86,21 +86,22 @@ impl Dispatcher {
 
     pub async fn fail_work(&self, task_id: WorkId, reason: FailReason) {
         let existing = self.in_flight.remove(&task_id);
-        if let Some((_, failure_handler)) = existing {
+        if let Some((_, (idempotency_id, failure_handler))) = existing {
             info!("Task {} for worker {} failed: {}", task_id.task_id, task_id.worker_id, reason);
-            let q = self.workers.lock().await.mark_ready(task_id.worker_id);
+            self.workers.lock().await.mark_ready(task_id.worker_id);
             failure_handler.fail_task(idempotency_id).await;
         } else {
             warn!("Task {} for worker {} marked as failed, but was not found: {}", task_id.task_id, task_id.worker_id, reason);
         }
     }
 
-    pub async fn try_assign(&self, postzegel_code: String, handler: TaskFailureHandler, idempotency_id: Option<u64>) -> AssignResult {
+    pub async fn try_assign(&self, postzegel_code: String, handler: TaskFailureHandler, idempotency_id: Option<IdemId>) -> AssignResult {
         // idempotency is set if this is a retry, we use the same id again to detect duplicates
         let task_id = self.top_task_id.fetch_add(1, atomic::Ordering::Relaxed);
+        let idempotency_id = idempotency_id.unwrap_or(IdemId::new(task_id));
         let work = WorkAssignment {
             task_id,
-            idempotency_id: idempotency_id.unwrap_or(task_id),
+            idempotency_id: idempotency_id.as_number(),
             //TODO @mark: ^ make sure this stays the same if task times out or fails
             postzegel_code,
         };
@@ -109,12 +110,12 @@ impl Dispatcher {
             return AssignResult::NoWorkers;
         };
         let work_id = WorkId { worker_id: worker, task_id };
-        self.in_flight.insert(work_id, handler);
+        self.in_flight.insert(work_id, (idempotency_id, handler));
         match sender.send(work).await {
             Ok(()) => AssignResult::Assigned(work_id),
             Err(err) => {
                 // The channel is probably closed, but the next attempt might get a different worker, so try again
-                if let Some((_, handler)) = self.in_flight.remove(&work_id) {
+                if let Some((_, (idempotency_id, handler))) = self.in_flight.remove(&work_id) {
                     warn!("Failed to send work request {} to worker {}: {}", task_id, worker, err);
                     handler.fail_task(idempotency_id).await;
                 } else {

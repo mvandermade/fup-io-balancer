@@ -1,10 +1,12 @@
-use crate::channel::{channel, Fork};
 use crate::channel::Sink;
 use crate::channel::Source;
+use crate::channel::channel;
+use crate::channel::Fork;
 use crate::dispatcher::AssignResult;
 use crate::dispatcher::Dispatcher;
 use crate::global::ChannelKey;
 use crate::postzegel::PostzegelEvent;
+use crate::task_util::IdemId;
 use crate::task_util::TaskFailureHandler;
 use ::log::debug;
 use ::log::info;
@@ -18,8 +20,8 @@ pub struct Balancer {
     pub source: Source<PostzegelEvent>,
     dispatcher: Arc<Dispatcher>,
     //TODO @mark: ^ can Arc be removed once rpc doesn't have access to dispatcher?
-    backlog_sink: Sink<(PostzegelEvent, Option<u64>)>,
-    backlog_source: Source<(PostzegelEvent, Option<u64>)>,
+    backlog_sink: Sink<(PostzegelEvent, Option<IdemId>)>,
+    backlog_source: Source<(PostzegelEvent, Option<IdemId>)>,
     // idempotency id, in case the backlog entry is a retry ^
 }
 

@@ -25,6 +25,7 @@
 # Todo
 - make client disconnect gracefully
 - drain backlog
+- track idempotency id to prevent repeats
 - handle ack timeouts responses
 - stats
 
