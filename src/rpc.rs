@@ -55,7 +55,7 @@ impl BalancerSvc for BalancerRpc {
                         if ack.error.is_empty() {
                             dispatcher_clone.complete_work(task_id).await;
                         } else {
-                            dispatcher_clone.fail_work(task_id, FailReason::Error(ack.error)).await;
+                            dispatcher_clone.fail_work(task_id, FailReason::WorkerError(ack.error)).await;
                         }
                     }
                     Err(err) => {

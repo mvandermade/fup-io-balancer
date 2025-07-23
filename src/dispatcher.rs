@@ -42,7 +42,8 @@ impl fmt::Display for FailReason {
         match self {
             FailReason::Disconnect => write!(f, "worker disconnected"),
             FailReason::Timeout => write!(f, "task timed out"),
-            FailReason::Error(msg) => write!(f, "failed: {}", msg),
+            FailReason::WorkerError(msg) => write!(f, "failed: {}", msg),
+            FailReason::ServerError(msg) => write!(f, "server failed: {}", msg),
         }
     }
 }
@@ -93,11 +94,12 @@ impl Dispatcher {
         }
     }
 
-    pub async fn try_assign(&self, postzegel_code: String, handler: TaskFailureHandler) -> AssignResult {
+    pub async fn try_assign(&self, postzegel_code: String, handler: TaskFailureHandler, idempotency_id: Option<u64>) -> AssignResult {
+        // idempotency is set if this is a retry, we use the same id again to detect duplicates
         let task_id = self.top_task_id.fetch_add(1, atomic::Ordering::Relaxed);
         let work = WorkAssignment {
             task_id,
-            idempotency_id: task_id,
+            idempotency_id: idempotency_id.unwrap_or(task_id),
             //TODO @mark: ^ make sure this stays the same if task times out or fails
             postzegel_code,
         };
@@ -110,9 +112,10 @@ impl Dispatcher {
         match sender.send(work).await {
             Ok(()) => AssignResult::Assigned(work_id),
             Err(err) => {
+                // The channel is probably closed, but the next attempt might get a different worker, so try again
                 if let Some((_, handler)) = self.in_flight.remove(&work_id) {
                     warn!("Failed to send work request {} to worker {}: {}", task_id, worker, err);
-                    handler.fail_task(FailReason::Error(err.to_string())).await;
+                    handler.fail_task(idempotency_id).await;
                 } else {
                     warn!("Failed to send work request {} to worker {}, and could not find failure handler: {}", task_id, worker, err);
                 }

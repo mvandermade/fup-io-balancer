@@ -1,3 +1,4 @@
+use log::warn;
 use crate::channel::Sink;
 use crate::postzegel::PostzegelEvent;
 
@@ -5,11 +6,13 @@ use crate::postzegel::PostzegelEvent;
 pub enum FailReason {
     Disconnect,
     Timeout,  //TODO @mark:
-    Error(String),
+    WorkerError(String),
+    ServerError(String),
 }
 
 #[derive(Debug)]
 pub struct TaskFailureHandler {
+    event: PostzegelEvent,
     sink: Sink<(PostzegelEvent, Option<u64>)>,
 }
 
@@ -20,7 +23,10 @@ impl TaskFailureHandler {
 }
 
 impl TaskFailureHandler {
-    pub async fn fail_task(self, reason: FailReason) {
-        todo!()
+    pub async fn fail_task(self, idempotency_id: u64) {
+        if let Err(((event, _), err)) = self.sink.try_send((self.event, Some(idempotency_id))) {
+            warn!("Could not re-add failed event {event} to backlog, err: {err}")
+            //TODO @mark: metrics?
+        }
     }
 }
