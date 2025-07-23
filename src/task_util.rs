@@ -1,3 +1,5 @@
+use crate::channel::Sink;
+use crate::postzegel::PostzegelEvent;
 
 #[derive(Debug)]
 pub enum FailReason {
@@ -8,7 +10,13 @@ pub enum FailReason {
 
 #[derive(Debug)]
 pub struct TaskFailureHandler {
-    task_id: u64,
+    sink: Sink<(PostzegelEvent, Option<u64>)>,
+}
+
+impl TaskFailureHandler {
+    pub fn new(sink: Sink<(PostzegelEvent, Option<u64>)>) -> Self {
+        TaskFailureHandler { sink }
+    }
 }
 
 impl TaskFailureHandler {

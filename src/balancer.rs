@@ -10,7 +10,6 @@ use ::log::debug;
 use ::log::info;
 use ::log::warn;
 use ::std::sync::Arc;
-use std::arch::x86_64::_mm256_castpd_ps;
 
 const BACKLOG_SIZE: usize = 1024;
 
@@ -18,6 +17,7 @@ const BACKLOG_SIZE: usize = 1024;
 pub struct Balancer {
     pub source: Source<PostzegelEvent>,
     dispatcher: Arc<Dispatcher>,
+    //TODO @mark: ^ can Arc be removed once rpc doesn't have access to dispatcher?
     backlog_sink: Sink<(PostzegelEvent, Option<u64>)>,
     backlog_source: Source<(PostzegelEvent, Option<u64>)>,
     // idempotency id, in case the backlog entry is a retry ^
@@ -40,8 +40,8 @@ impl Balancer {
         info!("Going to wait for postzegel events");
         while let Some(event) = self.source.receive().await {
             debug!("Got a postzegel event {}", event);
-            let handler = TaskFailureHandler {};
-            let assignment = self.dispatcher.try_assign(event.code_str()).await;
+            let handler = TaskFailureHandler::new(self.backlog_sink.fork());
+            let assignment = self.dispatcher.try_assign(event.code_str(), handler).await;
             if let AssignResult::Assigned(work_id) = assignment {
                 debug!(
                     "Event {} ({event}) assigned to worker {}",

@@ -30,10 +30,11 @@ pub struct Dispatcher {
     in_flight: DashMap<WorkId, TaskFailureHandler>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AssignResult {
     Assigned(WorkId),
     NoWorkers,
+    Error(String),
 }
 
 impl fmt::Display for FailReason {
@@ -106,7 +107,17 @@ impl Dispatcher {
         };
         let work_id = WorkId { worker_id: worker, task_id };
         self.in_flight.insert(work_id, handler);
-        sender.send(work).await.expect("Failed to send work assignment to grpc channel");
-        AssignResult::Assigned(work_id)
+        match sender.send(work).await {
+            Ok(()) => AssignResult::Assigned(work_id),
+            Err(err) => {
+                if let Some((_, handler)) = self.in_flight.remove(&work_id) {
+                    warn!("Failed to send work request {} to worker {}: {}", task_id, worker, err);
+                    handler.fail_task(FailReason::Error(err.to_string())).await;
+                } else {
+                    warn!("Failed to send work request {} to worker {}, and could not find failure handler: {}", task_id, worker, err);
+                }
+                AssignResult::Error(err.to_string())
+            },
+        }
     }
 }
