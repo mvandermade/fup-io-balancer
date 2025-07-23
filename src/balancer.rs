@@ -15,6 +15,7 @@ use ::log::debug;
 use ::log::info;
 use ::log::warn;
 use ::std::sync::Arc;
+use tokio::time;
 
 const BACKLOG_SIZE: usize = 1024;
 
@@ -41,7 +42,7 @@ impl Balancer {
 }
 
 impl Balancer {
-    pub async fn run(mut self) -> ! {
+    pub async fn run(mut self, no_worker_delay_us: u64) -> ! {
         info!("Going to wait for postzegel events");
         loop {
             let f1 = self.source.receive().fuse();
@@ -62,11 +63,12 @@ impl Balancer {
                     work_id.task_id, work_id.worker_id
                 );
             } else {
-                debug!("Event ({event}) not assigned, send to backlog");
+                debug!("Event ({event}) not assigned, send to backlog and waiting {} ms", no_worker_delay_us / 1000);
                 if let Err(((event, _), err)) = self.backlog_sink.try_send((event, None)) {
                     warn!("Backlog is full or closed, rejecting event {event} (err: {err})");
                     //TODO @mark: metric
                 };
+                time::sleep(time::Duration::from_micros(no_worker_delay_us)).await;
             }
         }
     }
