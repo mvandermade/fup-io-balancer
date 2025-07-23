@@ -1,13 +1,16 @@
-use crate::channel::Sink;
-use crate::channel::Source;
 use crate::channel::channel;
 use crate::channel::Fork;
+use crate::channel::Sink;
+use crate::channel::Source;
 use crate::dispatcher::AssignResult;
 use crate::dispatcher::Dispatcher;
 use crate::global::ChannelKey;
 use crate::postzegel::PostzegelEvent;
 use crate::task_util::IdemId;
 use crate::task_util::TaskFailureHandler;
+use ::futures::pin_mut;
+use ::futures::select;
+use ::futures::FutureExt;
 use ::log::debug;
 use ::log::info;
 use ::log::warn;
@@ -40,7 +43,16 @@ impl Balancer {
 impl Balancer {
     pub async fn run(mut self) -> ! {
         info!("Going to wait for postzegel events");
-        while let Some(event) = self.source.receive().await {
+        loop {
+            let f1 = self.source.receive().fuse();
+            let f2 = self.backlog_source.receive().fuse();
+            pin_mut!(f1, f2);
+            let (event, idempotency_id) = select! {
+                fresh = f1 => if let Some(fresh) = fresh { (fresh, None) } else { continue },
+                backlog = f2 => if let Some(backlog) = backlog { backlog } else { continue },
+                complete => panic!("Balancer source and backlog closed"),
+            };
+            //TODO @mark: does this indeed stop if both are closed?
             debug!("Got a postzegel event {}", event);
             let handler = TaskFailureHandler::new(event.clone(), self.backlog_sink.fork());
             let assignment = self.dispatcher.try_assign(event.code_str(), handler, idempotency_id).await;
@@ -57,7 +69,5 @@ impl Balancer {
                 };
             }
         }
-        //TODO @mark: drain queue here
-        panic!("Scanner channel closed, existing balancer")
     }
 }
