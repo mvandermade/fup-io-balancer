@@ -1,5 +1,6 @@
-use crate::rpc::WorkAssignment;
 use crate::channel::Sink;
+use crate::rpc::WorkAssignment;
+use crate::task_util::{FailReason, TaskFailureHandler};
 use crate::workers::WorkerId;
 use crate::workers::Workers;
 use ::dashmap::DashMap;
@@ -26,14 +27,13 @@ pub struct Dispatcher {
     top_worker_id: AtomicU32,
     top_task_id: AtomicU64,
     workers: Arc<Mutex<Workers<WorkAssignment>>>,
-    in_flight: DashMap<WorkId, ()>,
+    in_flight: DashMap<WorkId, TaskFailureHandler>,
 }
 
-#[derive(Debug)]
-pub enum FailReason {
-    Disconnect,
-    Timeout,  //TODO @mark:
-    Error(String),
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AssignResult {
+    Assigned(WorkId),
+    NoWorkers,
 }
 
 impl fmt::Display for FailReason {
@@ -84,16 +84,15 @@ impl Dispatcher {
 
     pub async fn fail_work(&self, task_id: WorkId, reason: FailReason) {
         let existing = self.in_flight.remove(&task_id);
-        if existing.is_some() {
+        if let Some((_, failure_handler)) = existing {
             info!("Task {} for worker {} failed: {}", task_id.task_id, task_id.worker_id, reason);
+            failure_handler.fail_task(reason).await;
         } else {
             warn!("Task {} for worker {} marked as failed, but was not found: {}", task_id.task_id, task_id.worker_id, reason);
         }
-        //TODO @mark: add it back to queue
-        //TODO @mark: impl timeout
     }
 
-    pub async fn try_assign(&self, postzegel_code: String) -> AssignResult {
+    pub async fn try_assign(&self, postzegel_code: String, handler: TaskFailureHandler) -> AssignResult {
         let task_id = self.top_task_id.fetch_add(1, atomic::Ordering::Relaxed);
         let work = WorkAssignment {
             task_id,
@@ -106,14 +105,8 @@ impl Dispatcher {
             return AssignResult::NoWorkers;
         };
         let work_id = WorkId { worker_id: worker, task_id };
-        self.in_flight.insert(work_id, ());
+        self.in_flight.insert(work_id, handler);
         sender.send(work).await.expect("Failed to send work assignment to grpc channel");
         AssignResult::Assigned(work_id)
     }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum AssignResult {
-    Assigned(WorkId),
-    NoWorkers,
 }

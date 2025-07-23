@@ -4,7 +4,6 @@ pub use self::proto::WorkAcknowledgement;
 pub use self::proto::WorkAssignment;
 
 use crate::dispatcher::Dispatcher;
-use crate::dispatcher::FailReason;
 use crate::dispatcher::WorkId;
 use crate::channel::channel;
 use ::futures::StreamExt;
@@ -16,6 +15,7 @@ use ::std::pin::Pin;
 use ::std::sync::Arc;
 use ::tonic::codegen::tokio_stream::wrappers::ReceiverStream;
 use crate::global::ChannelKey;
+use crate::task_util::FailReason;
 
 mod proto {
     #![allow(non_camel_case_types)]

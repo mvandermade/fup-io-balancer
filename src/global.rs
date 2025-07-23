@@ -4,6 +4,7 @@ use std::fmt;
 pub enum ChannelKey {
     Scanner,
     Assignments,
+    BalancerBacklog,
 }
 
 impl fmt::Display for ChannelKey {

@@ -18,6 +18,7 @@ use ::std::thread;
 use ::tonic::transport::Server;
 
 mod dispatcher;
+mod task_util;
 mod rpc;
 mod balancer;
 mod scanner;
@@ -59,8 +60,6 @@ async fn main() {
 async fn run(addr: SocketAddr) {
     info!("Let's start some scanners!");
     let (snd, rcv) = channel::<PostzegelEvent>(1024, ChannelKey::Scanner);
-
-    //TODO @mark: use scoped threads, if we figure out how to add a thread name to those
 
     let mut workers = Vec::with_capacity(8);
     for nr in 1 ..= 3 {
