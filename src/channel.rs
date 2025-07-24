@@ -3,7 +3,7 @@ use ::log::info;
 use ::std::fmt::Debug;
 use ::std::mem;
 use ::tokio::sync::mpsc;
-use tokio::sync::mpsc::error::TrySendError;
+use ::tokio::sync::mpsc::error::TrySendError;
 
 #[derive(Debug)]
 pub struct Source<T: Debug> {

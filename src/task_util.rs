@@ -22,7 +22,6 @@ pub enum FailReason {
     Disconnect,
     Timeout,  //TODO @mark:
     WorkerError(String),
-    ServerError(String),
 }
 
 #[derive(Debug)]

@@ -45,7 +45,6 @@ impl fmt::Display for FailReason {
             FailReason::Disconnect => write!(f, "worker disconnected"),
             FailReason::Timeout => write!(f, "task timed out"),
             FailReason::WorkerError(msg) => write!(f, "failed: {}", msg),
-            FailReason::ServerError(msg) => write!(f, "server failed: {}", msg),
         }
     }
 }

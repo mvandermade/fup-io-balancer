@@ -8,14 +8,10 @@ use crate::global::ChannelKey;
 use crate::postzegel::PostzegelEvent;
 use crate::task_util::IdemId;
 use crate::task_util::TaskFailureHandler;
-use ::futures::pin_mut;
-use ::futures::select;
-use ::futures::FutureExt;
 use ::log::debug;
 use ::log::info;
 use ::log::warn;
 use ::std::sync::Arc;
-use tokio::time;
 
 const BACKLOG_SIZE: usize = 1024;
 
@@ -42,18 +38,17 @@ impl Balancer {
 }
 
 impl Balancer {
-    pub async fn run(mut self, no_worker_delay_us: u64) -> ! {
+    pub async fn run(mut self) -> ! {
         info!("Going to wait for postzegel events");
-        loop {
-            let f1 = self.source.receive().fuse();
-            let f2 = self.backlog_source.receive().fuse();
-            pin_mut!(f1, f2);
-            let (event, idempotency_id) = select! {
-                fresh = f1 => if let Some(fresh) = fresh { (fresh, None) } else { continue },
-                backlog = f2 => if let Some(backlog) = backlog { backlog } else { continue },
-                complete => panic!("Balancer source and backlog closed"),
-            };
-            //TODO @mark: does this indeed stop if both are closed?
+        let sink_copy = self.backlog_sink.fork();
+        tokio::spawn(async move {
+            while let Some(event) = self.source.receive().await {
+                debug!("Got a postzegel event {}", event);
+                sink_copy.try_send((event, None)).unwrap();
+            }
+            panic!("Postzegel source closed");
+        });
+        while let Some((event, idempotency_id)) = self.backlog_source.receive().await {
             debug!("Got a postzegel event {}", event);
             let handler = TaskFailureHandler::new(event.clone(), self.backlog_sink.fork());
             let assignment = self.dispatcher.try_assign(event.code_str(), handler, idempotency_id).await;
@@ -63,13 +58,13 @@ impl Balancer {
                     work_id.task_id, work_id.worker_id
                 );
             } else {
-                debug!("Event ({event}) not assigned, send to backlog and waiting {} ms", no_worker_delay_us / 1000);
+                debug!("Event ({event}) not assigned, send to backlog");
                 if let Err(((event, _), err)) = self.backlog_sink.try_send((event, None)) {
                     warn!("Backlog is full or closed, rejecting event {event} (err: {err})");
                     //TODO @mark: metric
                 };
-                time::sleep(time::Duration::from_micros(no_worker_delay_us)).await;
             }
         }
+        panic!("Postzegel backlog closed");
     }
 }

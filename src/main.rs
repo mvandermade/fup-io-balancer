@@ -55,10 +55,10 @@ async fn main() {
         exit(2)
     }));
 
-    run(args.addr, args.no_worker_delay_us).await;
+    run(args.addr).await;
 }
 
-async fn run(addr: SocketAddr, no_worker_delay_us: u64) {
+async fn run(addr: SocketAddr) {
     info!("Let's start some scanners!");
     let (snd, rcv) = channel::<PostzegelEvent>(1024, ChannelKey::Scanner);
 
@@ -72,7 +72,7 @@ async fn run(addr: SocketAddr, no_worker_delay_us: u64) {
 
     let dispatcher = Arc::new(Dispatcher::new());
     let dispatcher_clone = dispatcher.clone();
-    let balancer_worker = tokio::spawn(Balancer::new(rcv, dispatcher_clone).run(no_worker_delay_us));
+    let balancer_worker = tokio::spawn(Balancer::new(rcv, dispatcher_clone).run());
     workers.push(balancer_worker);
 
     info!("Going to listen on {}", addr);
