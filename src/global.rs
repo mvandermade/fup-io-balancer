@@ -5,6 +5,7 @@ pub enum ChannelKey {
     Scanner,
     Assignments,
     BalancerBacklog,
+    AvailableWorkers,
 }
 
 impl fmt::Display for ChannelKey {
