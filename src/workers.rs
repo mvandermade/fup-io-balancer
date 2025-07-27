@@ -1,16 +1,17 @@
-use crate::channel::Fork;
-use crate::channel::Source;
 use crate::channel::channel;
+use crate::channel::Fork;
 use crate::channel::Sink;
+use crate::channel::Source;
 use crate::global::ChannelKey;
 use ::dashmap::DashMap;
 use ::std::fmt::Debug;
+use ::tokio::sync::Mutex;
 
 pub type WorkerId = u32;
 
 #[derive(Debug)]
 pub struct Workers<T: Fork + Debug> {
-    available_source: Source<(WorkerId, T)>,
+    available_source: Mutex<Source<(WorkerId, T)>>,
     available_sink: Sink<(WorkerId, T)>,
     busy: DashMap<WorkerId, T>,
     //TODO @mark: ^ use better dequeue
@@ -20,7 +21,7 @@ impl <T: Fork + Debug> Workers<T> {
     pub fn new() -> Workers<T> {
         let (sink, source) = channel(1024, ChannelKey::AvailableWorkers);
         Workers {
-            available_source: source,
+            available_source: Mutex::new(source),
             available_sink: sink,
             busy: DashMap::with_capacity(1024),
         }
@@ -46,8 +47,8 @@ impl <T: Fork + Debug> Workers<T> {
         }
     }
 
-    pub async fn find_available(&mut self) -> (WorkerId, T) {
-        let maybe_worker_data = self.available_source.receive().await;
+    pub async fn find_available(&self) -> (WorkerId, T) {
+        let maybe_worker_data = self.available_source.lock().await.receive().await;
         if let Some((worker_id, data)) = maybe_worker_data {
             let existing = self.busy.insert(worker_id, data.fork());
             if let Some(_) = existing {

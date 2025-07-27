@@ -15,7 +15,6 @@ use ::std::sync::Arc;
 
 const BACKLOG_SIZE: usize = 1024;
 
-#[derive(Debug)]
 pub struct Balancer {
     pub source: Source<PostzegelEvent>,
     dispatcher: Arc<Dispatcher>,

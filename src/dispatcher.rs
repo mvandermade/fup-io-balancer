@@ -22,7 +22,6 @@ pub struct WorkId {
 }
 
 /// stores data about workers and in-flight tasks (but not backlog)
-#[derive(Debug)]
 pub struct Dispatcher {
     top_worker_id: AtomicU32,
     top_task_id: AtomicU64,
@@ -94,7 +93,7 @@ impl Dispatcher {
         }
     }
 
-    pub async fn try_assign(&mut self, postzegel_code: String, handler: TaskFailureHandler, idempotency_id: Option<IdemId>) -> AssignResult {
+    pub async fn try_assign(&self, postzegel_code: String, handler: TaskFailureHandler, idempotency_id: Option<IdemId>) -> AssignResult {
         // idempotency is set if this is a retry, we use the same id again to detect duplicates
         let task_id = self.top_task_id.fetch_add(1, atomic::Ordering::Relaxed);
         let idempotency_id = idempotency_id.unwrap_or(IdemId::new(task_id));

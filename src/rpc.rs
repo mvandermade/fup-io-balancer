@@ -22,7 +22,6 @@ mod proto {
     tonic::include_proto!("balancerapi");
 }
 
-#[derive(Debug)]
 pub struct BalancerRpc {
     dispatcher: Arc<Dispatcher>,
 }
